@@ -20,7 +20,7 @@ API REST para el sistema SmartCampus, construida con Spring Boot.
 ## Instalación
 
 ```bash
-git clone [https://github.com/yudithNV/Backend-SmartCampus.git](https://github.com/yudithNV/Backend-SmartCampus.git)
+git clone https://github.com/yudithNV/Backend-SmartCampus.git
 ```
 ```sh
 cd Backend-SmartCampus
