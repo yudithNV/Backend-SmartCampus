@@ -3,7 +3,6 @@ package com.example.smartcampus.config;
 import com.example.smartcampus.security.CustomAccessDeniedHandler;
 import com.example.smartcampus.security.CustomAuthEntryPoint;
 import com.example.smartcampus.security.JwtAuthFilter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;

@@ -9,4 +9,5 @@ public class LoginResponseDTO {
 
     private String token;
     private String role;
+    private String redirectUrl; // /estudiante, /publicador, /admin
 }

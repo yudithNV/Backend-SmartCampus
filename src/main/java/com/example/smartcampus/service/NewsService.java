@@ -62,4 +62,11 @@ public class NewsService {
                 n.getCreatedAt(), n.getUpdatedAt()
         );
     }
+
+
+    public NewsResponseDTO getNewsById(Long id) {
+        News news = newsRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Noticia no encontrada"));
+        return toDTO(news);
+    }
 }

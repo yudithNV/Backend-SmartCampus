@@ -4,6 +4,8 @@ import com.example.smartcampus.dto.NewsCreateDTO;
 import com.example.smartcampus.dto.NewsResponseDTO;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.service.NewsService;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,7 +22,7 @@ public class NewsController {
 
     @PostMapping
     public ResponseEntity<NewsResponseDTO> create(
-            @RequestBody NewsCreateDTO dto,
+            @Valid @RequestBody NewsCreateDTO dto,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(newsService.createNews(dto, user));
     }
@@ -32,5 +34,11 @@ public class NewsController {
             @RequestBody NewsCreateDTO dto,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(newsService.updateNews(id, dto, user));
+    }
+
+
+    @GetMapping("/{id}")
+    public ResponseEntity<NewsResponseDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(newsService.getNewsById(id));
     }
 }

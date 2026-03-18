@@ -23,14 +23,17 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         if(!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())){
-            throw new RuntimeException("Contraseña incorrecta");
+            throw new RuntimeException("correo o Contraseña incorrecta");
         }
+        
 
         String token = jwtService.generateToken(user);
+        String redirectUrl = switch (user.getRole()) {
+        case ESTUDIANTE    -> "/estudiante/dashboard";
+        case PUBLICADOR    -> "/publicador/dashboard";
+        case ADMINISTRADOR -> "/admin/dashboard";
+    };
 
-        return new LoginResponseDTO(
-                token,
-                user.getRole().name()
-        );
+        return new LoginResponseDTO(token, user.getRole().name(), redirectUrl);
     }
 }

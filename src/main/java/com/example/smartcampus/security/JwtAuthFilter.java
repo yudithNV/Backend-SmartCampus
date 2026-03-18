@@ -56,10 +56,10 @@ protected void doFilterInternal(HttpServletRequest request,
                             user.getAuthorities()
                     );
             SecurityContextHolder.getContext().setAuthentication(auth);
-            System.out.println(">>> AUTENTICACIÓN SETEADA OK"); // <-- log temporal
+            System.out.println(">>> AUTENTICACIÓN SETEADA OK"); 
         }
     } catch (Exception e) {
-        System.out.println(">>> ERROR EN FILTRO: " + e.getMessage()); // <-- log temporal
+        System.out.println(">>> ERROR EN FILTRO: " + e.getMessage());
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.getWriter().write("{\"error\": \"Token inválido o expirado\"}");
