@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,6 +28,19 @@ public class NewsController {
         return ResponseEntity.ok(newsService.createNews(dto, user));
     }
 
+
+    // ── Listar TODAS las noticias publicadas (público) ──
+    @GetMapping
+    public ResponseEntity<List<NewsResponseDTO>> getAll() {
+        return ResponseEntity.ok(newsService.getAllPublished());
+    }
+
+    // ── Listar las noticias del publicador autenticado ──
+    @GetMapping("/my")
+    public ResponseEntity<List<NewsResponseDTO>> getMyNews(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(newsService.getNewsByAuthor(user));
+    }
 
     @PutMapping("/{id}")
     public ResponseEntity<NewsResponseDTO> update(

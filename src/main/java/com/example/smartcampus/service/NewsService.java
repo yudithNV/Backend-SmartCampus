@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,18 @@ public class NewsService {
                 .build();
 
         return toDTO(newsRepository.save(news));
+    }
+
+    // ── Todas las publicadas ──
+    public List<NewsResponseDTO> getAllPublished() {
+        return newsRepository.findAllByPublishedTrueOrderByCreatedAtDesc()
+                .stream().map(this::toDTO).toList();
+    }
+ 
+    // ── Las del autor autenticado (todas, publicadas y borradores) ──
+    public List<NewsResponseDTO> getNewsByAuthor(User author) {
+        return newsRepository.findAllByAuthorIdOrderByCreatedAtDesc(author.getId())
+                .stream().map(this::toDTO).toList();
     }
 
     public NewsResponseDTO updateNews(Long id, NewsCreateDTO dto, User author) {
