@@ -1,8 +1,5 @@
 package com.example.smartcampus.config;
 
-import com.example.smartcampus.security.CustomAccessDeniedHandler;
-import com.example.smartcampus.security.CustomAuthEntryPoint;
-import com.example.smartcampus.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -14,6 +11,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.example.smartcampus.security.CustomAccessDeniedHandler;
+import com.example.smartcampus.security.CustomAuthEntryPoint;
+import com.example.smartcampus.security.JwtAuthFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -39,10 +40,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/users").permitAll() // TODO: Agregar restricción de seguridad
                 .requestMatchers(HttpMethod.POST, "/api/news").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.PUT, "/api/news/**").hasRole("PUBLICADOR")
                 .requestMatchers("/api/profile/**").hasRole("ESTUDIANTE")
-                .anyRequest().authenticated()
+                // .anyRequest().authenticated() // TODO: Habilitar restricción global cuando esté listo
+                .anyRequest().permitAll() // Temporal: permitir todos los requests sin autenticación
             )
             .exceptionHandling(ex -> ex
                 .accessDeniedHandler(accessDeniedHandler)       // 403 con mensaje
