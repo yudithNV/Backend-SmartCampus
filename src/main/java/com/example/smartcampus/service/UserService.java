@@ -22,6 +22,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CareerService careerService;
 
     public User createUser(UserCreateDTO dto) {
 
@@ -64,12 +65,12 @@ public class UserService {
     public List<UserListDTO> listAllUsers() {
         return userRepository.findAll().stream()
             .map(user -> {
-                String careerName = getCareerName(user);
+                UserListDTO.CareerInfo careerInfo = getCareerInfo(user);
                 return new UserListDTO(
                     user.getId(),
                     user.getFullName(),
                     user.getRole().name(),
-                    careerName,
+                    careerInfo,
                     user.getStatus().name(),
                     user.getCreatedAt().toString()
                 );
@@ -77,10 +78,24 @@ public class UserService {
             .toList();
     }
 
+    private UserListDTO.CareerInfo getCareerInfo(User user) {
+        if (user.getRole() != Role.ESTUDIANTE || user.getCareerId() == null) {
+            return null;
+        }
+        return careerService.getCareerById(user.getCareerId())
+            .map(career -> new UserListDTO.CareerInfo(
+                career.getId(),
+                career.getName(),
+                career.getCode()
+            ))
+            .orElse(null);
+    }
+
     private String getCareerName(User user) {
         if (user.getRole() != Role.ESTUDIANTE || user.getCareerId() == null) {
             return "N/A";
         }
-        return "Carrera " + user.getCareerId();
+        return careerService.getCareerNameById(user.getCareerId())
+            .orElse("Carrera no encontrada");
     }
 }

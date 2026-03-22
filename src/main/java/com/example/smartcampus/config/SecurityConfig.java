@@ -41,9 +41,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/users").permitAll() // TODO: Agregar restricción de seguridad
+                .requestMatchers(HttpMethod.GET, "/api/careers").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/news").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.PUT, "/api/news/**").hasRole("PUBLICADOR")
                 .requestMatchers("/api/profile/**").hasRole("ESTUDIANTE")
+                .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/events").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.PUT, "/api/events/**").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("PUBLICADOR")
                 // .anyRequest().authenticated() // TODO: Habilitar restricción global cuando esté listo
                 .anyRequest().permitAll() // Temporal: permitir todos los requests sin autenticación
             )

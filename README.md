@@ -26,13 +26,13 @@ git clone https://github.com/yudithNV/Backend-SmartCampus.git
 cd Backend-SmartCampus
 ```
 ```sh
-./mvnw clean install
+mvnw clean install
 ```
 
 ### Modo de desarrollo 💻
 
 ```sh
-./mvnw spring-boot:run
+mvnw spring-boot:run
 ```
 
 ### Modo para producción ☁️

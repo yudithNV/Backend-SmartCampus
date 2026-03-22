@@ -1,20 +1,23 @@
 package com.example.smartcampus.dto;
 
-import java.util.UUID;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class UserListDTO {
+public class EventResponseDTO {
 
-    private UUID id;
-    private String fullName;
-    private String role;
+    private Long id;
+    private String title;
+    private String description;
+    private String eventDate;
+    private String location;
+    private String imageUrl;
+    private String category;
     private CareerInfo career;
-    private String status;
+    private String createdBy;
     private String createdAt;
+    private String updatedAt;
 
     @Data
     @AllArgsConstructor
