@@ -26,9 +26,9 @@ public class SecurityConfig {
     public SecurityConfig(@Lazy JwtAuthFilter jwtAuthFilter,
                           CustomAccessDeniedHandler accessDeniedHandler,
                           CustomAuthEntryPoint authEntryPoint) {
-        this.jwtAuthFilter = jwtAuthFilter;
+        this.jwtAuthFilter   = jwtAuthFilter;
         this.accessDeniedHandler = accessDeniedHandler;
-        this.authEntryPoint = authEntryPoint;
+        this.authEntryPoint  = authEntryPoint;
     }
 
     @Bean
@@ -38,23 +38,36 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // Auth
                 .requestMatchers("/api/auth/**").permitAll()
+                // Usuarios
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/users").permitAll() // TODO: Agregar restricción de seguridad
+                .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
+                // Carreras
                 .requestMatchers(HttpMethod.GET, "/api/careers").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/news").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.PUT, "/api/news/**").hasRole("PUBLICADOR")
-                .requestMatchers("/api/profile/**").hasRole("ESTUDIANTE")
-                .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/events").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.PUT, "/api/events/**").hasRole("PUBLICADOR")
+                // Noticias — lectura pública
+                .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
+                // Noticias — escritura solo PUBLICADOR
+                .requestMatchers(HttpMethod.POST,   "/api/news").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.PUT,    "/api/news/**").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/news/**").hasRole("PUBLICADOR")
+                // Subida de archivos — permitAll para evitar problemas con multipart y JWT
+                // El frontend igual manda el token; la validación real es en SupabaseStorageService
+                .requestMatchers(HttpMethod.POST, "/api/files/**").permitAll()
+                // Eventos
+                .requestMatchers(HttpMethod.GET,    "/api/events/**").permitAll()
+                .requestMatchers(HttpMethod.POST,   "/api/events").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.PUT,    "/api/events/**").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("PUBLICADOR")
-                // .anyRequest().authenticated() // TODO: Habilitar restricción global cuando esté listo
-                .anyRequest().permitAll() // Temporal: permitir todos los requests sin autenticación
+                // Perfil
+                .requestMatchers("/api/profile/**").hasRole("ESTUDIANTE")
+                // Todo lo demás autenticado
+                .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
-                .accessDeniedHandler(accessDeniedHandler)       // 403 con mensaje
-                .authenticationEntryPoint(authEntryPoint)       // 401 con mensaje
+                .accessDeniedHandler(accessDeniedHandler)
+                .authenticationEntryPoint(authEntryPoint)
             )
             .httpBasic(h -> h.disable())
             .formLogin(f -> f.disable())

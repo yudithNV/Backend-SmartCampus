@@ -1,4 +1,3 @@
-// config/PgEnumConverter.java
 package com.example.smartcampus.config;
 
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;

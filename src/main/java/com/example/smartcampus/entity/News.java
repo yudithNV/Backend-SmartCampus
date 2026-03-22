@@ -17,27 +17,33 @@ public class News {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // VARCHAR(255) en BD — suficiente para título
+    @Column(name = "title", nullable = false, length = 255)
     private String title;
 
-    @Column(name = "body", columnDefinition = "TEXT")
+    // TEXT en BD (después de ejecutar fix_news_columns.sql)
+    @Column(name = "body", nullable = false, columnDefinition = "TEXT")
     private String body;
 
-    @JdbcTypeCode(SqlTypes.NAMED_ENUM)          // <-- esto resuelve el tipo Postgres nativo
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "category")
     private NewsCategory category;
 
-    @Column(name = "cover_url")
+    // TEXT en BD (después del fix)
+    @Column(name = "cover_url", columnDefinition = "TEXT")
     private String coverUrl;
 
-    @Column(name = "attachment_url")
+    // TEXT en BD (después del fix)
+    @Column(name = "attachment_url", columnDefinition = "TEXT")
     private String attachmentUrl;
 
     @Column(name = "career_id")
     private Integer careerId;
 
-    @Column(name = "author_id")
+    @Column(name = "author_id", nullable = false)
     private UUID authorId;
 
+    @Column(name = "published")
     private Boolean published;
 
     @Column(name = "created_at")
