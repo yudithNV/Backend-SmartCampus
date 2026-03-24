@@ -1,20 +1,20 @@
 package com.example.smartcampus.security;
 
+import java.io.IOException;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.UserRepository;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -59,11 +59,10 @@ protected void doFilterInternal(HttpServletRequest request,
             System.out.println(">>> AUTENTICACIÓN SETEADA OK"); 
         }
     } catch (Exception e) {
-        System.out.println(">>> ERROR EN FILTRO: " + e.getMessage());
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.getWriter().write("{\"error\": \"Token inválido o expirado\"}");
-        return;
+        System.out.println(">>> ERROR EN FILTRO JWT: " + e.getMessage());
+        System.out.println(">>> Continuando sin autenticación para endpoints públicos...");
+        // NO devolvemos 401 automáticamente - dejamos que Spring Security decida
+        // basado en la configuración de SecurityConfig si el endpoint requiere auth o no
     }
 
     filterChain.doFilter(request, response);

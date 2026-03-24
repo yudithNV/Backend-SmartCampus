@@ -8,100 +8,126 @@ import com.example.smartcampus.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class EventService {
 
     private final EventRepository eventRepository;
-    private final CareerService careerService;
 
-    public EventResponseDTO createEvent(EventCreateDTO dto, User creator) {
+    public EventResponseDTO createEvent(EventCreateDTO dto, User user) {
         Event event = Event.builder()
-            .title(dto.getTitle())
-            .description(dto.getDescription())
-            .eventDate(OffsetDateTime.parse(dto.getEventDate()))
-            .location(dto.getLocation())
-            .imageUrl(dto.getImageUrl())
-            .category(dto.getCategory())
-            .careerId(dto.getCareerId())
-            .createdBy(creator.getFullName())
-            .createdAt(OffsetDateTime.now())
-            .updatedAt(OffsetDateTime.now())
-            .build();
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .eventType(dto.getEventType())
+                .location(dto.getLocation())
+                .startDatetime(parseDatetime(dto.getStartDate(), dto.getStartTime()))
+                .endDatetime(parseDatetime(dto.getEndDate(), dto.getEndTime()))
+                .maxCapacity(dto.getMaxCapacity())
+                .posterUrl(dto.getPosterUrl())
+                .careerId(dto.getCareerId())
+                .categoryId(dto.getCategoryId())
+                .authorId(user.getId())
+                .isActive(dto.getPublish() != null && dto.getPublish())
+                .build();
 
         Event saved = eventRepository.save(event);
-        return toResponseDTO(saved);
+        return mapToDTO(saved);
     }
 
-    public List<EventResponseDTO> getAllEvents() {
+    public List<EventResponseDTO> getAllPublished() {
         return eventRepository.findAll().stream()
-            .map(this::toResponseDTO)
-            .toList();
+                .filter(e -> e.getIsActive() != null && e.getIsActive())
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     public List<EventResponseDTO> getUpcomingEvents() {
-        return eventRepository.findByEventDateAfterOrderByEventDateAsc(OffsetDateTime.now()).stream()
-            .map(this::toResponseDTO)
-            .toList();
+        return eventRepository.findByStartDatetimeAfterOrderByStartDatetimeAsc(OffsetDateTime.now()).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<EventResponseDTO> getEventsByAuthor(User user) {
+        return eventRepository.findByAuthorIdOrderByCreatedAtDesc(user.getId()).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<EventResponseDTO> getEventsByCareer(Integer careerId) {
+        return eventRepository.findByCareerIdOrderByStartDatetimeAsc(careerId).stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     public EventResponseDTO getEventById(Long id) {
-        Event event = eventRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
-        return toResponseDTO(event);
+        return eventRepository.findById(id)
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
     }
 
-    public EventResponseDTO updateEvent(Long id, EventCreateDTO dto, User updater) {
+    public EventResponseDTO updateEvent(Long id, EventCreateDTO dto, User user) {
         Event event = eventRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
 
-        event.setTitle(dto.getTitle());
+        event.setName(dto.getName());
         event.setDescription(dto.getDescription());
-        event.setEventDate(OffsetDateTime.parse(dto.getEventDate()));
+        event.setEventType(dto.getEventType());
         event.setLocation(dto.getLocation());
-        event.setImageUrl(dto.getImageUrl());
-        event.setCategory(dto.getCategory());
+        event.setStartDatetime(parseDatetime(dto.getStartDate(), dto.getStartTime()));
+        event.setEndDatetime(parseDatetime(dto.getEndDate(), dto.getEndTime()));
+        event.setMaxCapacity(dto.getMaxCapacity());
+        event.setPosterUrl(dto.getPosterUrl());
         event.setCareerId(dto.getCareerId());
-        event.setUpdatedAt(OffsetDateTime.now());
+        event.setCategoryId(dto.getCategoryId());
+        event.setIsActive(dto.getPublish() != null && dto.getPublish());
 
         Event updated = eventRepository.save(event);
-        return toResponseDTO(updated);
+        return mapToDTO(updated);
     }
 
-    public void deleteEvent(Long id) {
-        if (!eventRepository.existsById(id)) {
-            throw new RuntimeException("Evento no encontrado");
-        }
-        eventRepository.deleteById(id);
-    }
-
-    private EventResponseDTO toResponseDTO(Event event) {
-        EventResponseDTO.CareerInfo careerInfo = null;
-        if (event.getCareerId() != null) {
-            careerInfo = careerService.getCareerById(event.getCareerId())
-                .map(career -> new EventResponseDTO.CareerInfo(
-                    career.getId(),
-                    career.getName(),
-                    career.getCode()
-                ))
-                .orElse(null);
-        }
-
+    private EventResponseDTO mapToDTO(Event event) {
         return new EventResponseDTO(
-            event.getId(),
-            event.getTitle(),
-            event.getDescription(),
-            event.getEventDate() != null ? event.getEventDate().toString() : null,
-            event.getLocation(),
-            event.getImageUrl(),
-            event.getCategory() != null ? event.getCategory().name() : null,
-            careerInfo,
-            event.getCreatedBy(),
-            event.getCreatedAt() != null ? event.getCreatedAt().toString() : null,
-            event.getUpdatedAt() != null ? event.getUpdatedAt().toString() : null
+                event.getId(),
+                event.getName(),
+                event.getDescription(),
+                event.getEventType(),
+                event.getLocation(),
+                event.getStartDatetime(),
+                event.getEndDatetime(),
+                event.getMaxCapacity(),
+                event.getPosterUrl(),
+                event.getCareerId(),
+                event.getAuthorId(),
+                event.getIsActive(),
+                event.getCategoryId(),
+                event.getCreatedAt(),
+                event.getUpdatedAt()
         );
+    }
+
+    /**
+     * Combina una fecha y hora en formato string a OffsetDateTime
+     * @param dateStr Formato: "YYYY-MM-DD"
+     * @param timeStr Formato: "HH:mm"
+     * @return OffsetDateTime en UTC, o null si alguno es null
+     */
+    private OffsetDateTime parseDatetime(String dateStr, String timeStr) {
+        if (dateStr == null || timeStr == null) {
+            return null;
+        }
+        try {
+            LocalDate date = LocalDate.parse(dateStr);
+            LocalTime time = LocalTime.parse(timeStr);
+            return date.atTime(time).atOffset(ZoneOffset.UTC);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Formato de fecha o hora inválido. Usa YYYY-MM-DD y HH:mm");
+        }
     }
 }

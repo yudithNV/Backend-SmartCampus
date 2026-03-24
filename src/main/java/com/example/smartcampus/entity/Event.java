@@ -2,8 +2,11 @@ package com.example.smartcampus.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Type;
+import com.example.smartcampus.converter.PostgreSQLEnumType;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "events")
@@ -14,34 +17,58 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "title", nullable = false)
-    private String title;
+    @Column(name = "name", nullable = false, length = 255)
+    private String name;
 
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "event_date", nullable = false)
-    private OffsetDateTime eventDate;
+    @Column(name = "event_type", length = 50)
+    @Type(value = PostgreSQLEnumType.class)
+    private EventType eventType;
 
-    @Column(name = "location")
+    @Column(name = "location", length = 255)
     private String location;
 
-    @Column(name = "image_url")
-    private String imageUrl;
+    @Column(name = "start_datetime", nullable = false)
+    private OffsetDateTime startDatetime;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "category", nullable = false)
-    private EventCategory category;
+    @Column(name = "end_datetime")
+    private OffsetDateTime endDatetime;
+
+    @Column(name = "max_capacity")
+    private Integer maxCapacity;
+
+    @Column(name = "poster_url", columnDefinition = "TEXT")
+    private String posterUrl;
 
     @Column(name = "career_id")
     private Integer careerId;
 
-    @Column(name = "created_by")
-    private String createdBy;
+    @Column(name = "author_id", nullable = false)
+    private UUID authorId;
+
+    @Column(name = "is_active")
+    private Boolean isActive;
+
+    @Column(name = "category_id")
+    private Integer categoryId;
 
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = OffsetDateTime.now();
+        updatedAt = OffsetDateTime.now();
+        if (isActive == null) isActive = true;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
 }

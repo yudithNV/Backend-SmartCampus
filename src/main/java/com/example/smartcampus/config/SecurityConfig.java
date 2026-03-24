@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
                 // Carreras
                 .requestMatchers(HttpMethod.GET, "/api/careers").permitAll()
+            
                 // Noticias — lectura pública
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
@@ -55,13 +56,20 @@ public class SecurityConfig {
                 // Subida de archivos — permitAll para evitar problemas con multipart y JWT
                 // El frontend igual manda el token; la validación real es en SupabaseStorageService
                 .requestMatchers(HttpMethod.POST, "/api/files/**").permitAll()
-                // Eventos
-                .requestMatchers(HttpMethod.GET,    "/api/events/**").permitAll()
-                .requestMatchers(HttpMethod.POST,   "/api/events").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.PUT,    "/api/events/**").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("PUBLICADOR")
                 // Perfil
                 .requestMatchers("/api/profile/**").hasRole("ESTUDIANTE")
+
+                // Eventos — lectura pública
+                .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
+                // Eventos — escritura solo PUBLICADOR
+                .requestMatchers(HttpMethod.POST, "/api/events").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.PUT, "/api/events/**").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("PUBLICADOR")
+
+
+                // Permitir la ruta de error para ver los fallos reales de la base de datos
+                .requestMatchers("/error").permitAll()
                 // Todo lo demás autenticado
                 .anyRequest().authenticated()
             )

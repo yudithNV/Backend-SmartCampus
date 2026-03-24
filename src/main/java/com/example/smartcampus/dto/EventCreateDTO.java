@@ -1,27 +1,43 @@
 package com.example.smartcampus.dto;
 
-import com.example.smartcampus.entity.EventCategory;
+import com.example.smartcampus.entity.EventType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class EventCreateDTO {
+    @NotBlank(message = "El nombre es requerido")
+    private String name;
 
-    @NotBlank(message = "El título es obligatorio")
-    private String title;
-
+    @NotBlank(message = "La descripción es requerida")
     private String description;
 
-    @NotNull(message = "La fecha del evento es obligatoria")
-    private String eventDate; // ISO 8601 format: "2026-03-25T14:30:00-04:00"
+    @NotNull(message = "El tipo de evento es requerido")
+    private EventType eventType;
 
     private String location;
 
-    private String imageUrl;
+    // Fecha y hora de inicio (separadas)
+    @NotBlank(message = "La fecha de inicio es requerida (formato: YYYY-MM-DD)")
+    private String startDate;  // ej: "2026-04-15"
 
-    @NotNull(message = "La categoría es obligatoria")
-    private EventCategory category;
+    @NotBlank(message = "La hora de inicio es requerida (formato: HH:mm)")
+    private String startTime;  // ej: "14:30"
 
-    private Integer careerId; // Opcional: null = evento general, con valor = evento específico de carrera
+    // Fecha y hora de fin (opcionales)
+    private String endDate;    // ej: "2026-04-15"
+    private String endTime;    // ej: "18:00"
+
+    private Integer maxCapacity;
+    private String posterUrl;
+    private Integer careerId;
+    private Integer categoryId;
+
+    // true = publicado, false = borrador
+    private Boolean publish = true;
 }
