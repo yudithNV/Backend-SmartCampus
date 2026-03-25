@@ -17,6 +17,7 @@ public class NewsResponseDTO {
     private String attachmentUrl;
     private Integer careerId;
     private UUID authorId;
+    private String authorName; 
     private Boolean published;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;

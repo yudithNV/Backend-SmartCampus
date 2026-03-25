@@ -6,6 +6,8 @@ import com.example.smartcampus.entity.News;
 import com.example.smartcampus.entity.NewsCategory;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.NewsRepository;
+import com.example.smartcampus.repository.UserRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,7 @@ import java.util.List;
 public class NewsService {
 
     private final NewsRepository newsRepository;
+    private final UserRepository userRepository;
 
     public NewsResponseDTO createNews(NewsCreateDTO dto, User author) {
         News news = News.builder()
@@ -68,13 +71,23 @@ public class NewsService {
     }
 
     private NewsResponseDTO toDTO(News n) {
+        String authorName = "Publicador";
+        var userOpt = userRepository.findById(n.getAuthorId());
+        if (userOpt.isPresent()) {
+            User u = userOpt.get();
+            authorName = u.getFullName() != null ? u.getFullName() : u.getEmail();
+        }
+
         return new NewsResponseDTO(
                 n.getId(), n.getTitle(), n.getBody(),
                 n.getCategory(), n.getCoverUrl(), n.getAttachmentUrl(),
-                n.getCareerId(), n.getAuthorId(), n.getPublished(),
+                n.getCareerId(), n.getAuthorId(),
+                authorName,  // ← campo nuevo
+                n.getPublished(),
                 n.getCreatedAt(), n.getUpdatedAt()
         );
     }
+    
 
 
     public NewsResponseDTO getNewsById(Long id) {
