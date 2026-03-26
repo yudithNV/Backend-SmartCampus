@@ -34,6 +34,6 @@ public class AuthService {
         case ADMINISTRADOR -> "/admin/dashboard";
     };
 
-        return new LoginResponseDTO(token, user.getRole().name(), redirectUrl);
+        return new LoginResponseDTO(token, user.getRole().name(), redirectUrl, user.getMustChangePassword());
     }
 }

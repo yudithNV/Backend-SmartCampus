@@ -58,7 +58,11 @@ public class User implements UserDetails {
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
-    // ---- UserDetails ----
+    // NUEVO CAMPO
+    @Column(name = "must_change_password")
+    private Boolean mustChangePassword;
+
+    // UserDetails 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
