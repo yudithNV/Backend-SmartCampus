@@ -5,6 +5,7 @@ import com.example.smartcampus.dto.EventResponseDTO;
 import com.example.smartcampus.entity.Event;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.EventRepository;
+import com.example.smartcampus.repository.LocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +13,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -20,21 +23,36 @@ import java.util.stream.Collectors;
 public class EventService {
 
     private final EventRepository eventRepository;
+    private final LocationRepository locationRepository;
 
     public EventResponseDTO createEvent(EventCreateDTO dto, User user) {
         OffsetDateTime startDatetime = parseDatetime(dto.getStartDate(), dto.getStartTime());
         OffsetDateTime endDatetime = parseDatetime(dto.getEndDate(), dto.getEndTime());
 
         // Validar conflicto de horario en la misma ubicación
-        boolean hasConflict = eventRepository.existsConflictingEvent(
+        Optional<Event> conflictingEvent = eventRepository.findConflictingEvent(
                 dto.getLocationId(),
                 startDatetime,
                 endDatetime,
                 0L // Para creación, no hay ID previo
         );
 
-        if (hasConflict) {
-            throw new RuntimeException("Ya existe un evento en esta ubicación en el horario seleccionado");
+        if (conflictingEvent.isPresent()) {
+            Event conflict = conflictingEvent.get();
+            String locationName = locationRepository.findById(dto.getLocationId())
+                    .map(loc -> loc.getName())
+                    .orElse("Ubicación desconocida");
+
+            String startTime = formatTime(conflict.getStartDatetime());
+            String endTime = formatTime(conflict.getEndDatetime());
+
+            throw new RuntimeException(
+                    String.format("Error: Ya existe el evento \"%s\" en %s de %s a %s.",
+                            conflict.getName(),
+                            locationName,
+                            startTime,
+                            endTime)
+            );
         }
 
         Event event = Event.builder()
@@ -100,15 +118,29 @@ public class EventService {
         OffsetDateTime endDatetime = parseDatetime(dto.getEndDate(), dto.getEndTime());
 
         // Validar conflicto de horario en la misma ubicación
-        boolean hasConflict = eventRepository.existsConflictingEvent(
+        Optional<Event> conflictingEvent = eventRepository.findConflictingEvent(
                 dto.getLocationId(),
                 startDatetime,
                 endDatetime,
                 id // Para actualización, excluir el evento actual
         );
 
-        if (hasConflict) {
-            throw new RuntimeException("Ya existe un evento en esta ubicación en el horario seleccionado");
+        if (conflictingEvent.isPresent()) {
+            Event conflict = conflictingEvent.get();
+            String locationName = locationRepository.findById(dto.getLocationId())
+                    .map(loc -> loc.getName())
+                    .orElse("Ubicación desconocida");
+
+            String startTime = formatTime(conflict.getStartDatetime());
+            String endTime = formatTime(conflict.getEndDatetime());
+
+            throw new RuntimeException(
+                    String.format("Error: Ya existe el evento \"%s\" en %s de %s a %s.",
+                            conflict.getName(),
+                            locationName,
+                            startTime,
+                            endTime)
+            );
         }
 
         event.setName(dto.getName());
@@ -128,23 +160,31 @@ public class EventService {
     }
 
     private EventResponseDTO mapToDTO(Event event) {
-        return new EventResponseDTO(
-                event.getId(),
-                event.getName(),
-                event.getDescription(),
-                event.getEventType(),
-                event.getLocationId(),
-                event.getStartDatetime(),
-                event.getEndDatetime(),
-                event.getMaxCapacity(),
-                event.getPosterUrl(),
-                event.getCareerId(),
-                event.getAuthorId(),
-                event.getIsActive(),
-                event.getCategoryId(),
-                event.getCreatedAt(),
-                event.getUpdatedAt()
-        );
+        return EventResponseDTO.builder()
+                .id(event.getId())
+                .name(event.getName())
+                .description(event.getDescription())
+                .eventType(event.getEventType())
+                .locationId(event.getLocationId())
+                .startDatetime(event.getStartDatetime())
+                .endDatetime(event.getEndDatetime())
+                .maxCapacity(event.getMaxCapacity())
+                .posterUrl(event.getPosterUrl())
+                .careerId(event.getCareerId())
+                .authorId(event.getAuthorId())
+                .isActive(event.getIsActive())
+                .categoryId(event.getCategoryId())
+                .createdAt(event.getCreatedAt())
+                .updatedAt(event.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * Formatea OffsetDateTime a formato HH:mm
+     */
+    private String formatTime(OffsetDateTime datetime) {
+        if (datetime == null) return "N/A";
+        return datetime.format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
     /**

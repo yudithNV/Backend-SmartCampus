@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -34,6 +35,19 @@ public interface EventRepository extends JpaRepository<Event, Long> {
            "AND e.id != :eventId " +
            "AND ((e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime))")
     boolean existsConflictingEvent(
+            @Param("locationId") Integer locationId,
+            @Param("startDatetime") OffsetDateTime startDatetime,
+            @Param("endDatetime") OffsetDateTime endDatetime,
+            @Param("eventId") Long eventId
+    );
+
+    // Obtener el evento que genera conflicto (para mensaje detallado)
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.locationId = :locationId " +
+           "AND e.id != :eventId " +
+           "AND ((e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime)) " +
+           "LIMIT 1")
+    Optional<Event> findConflictingEvent(
             @Param("locationId") Integer locationId,
             @Param("startDatetime") OffsetDateTime startDatetime,
             @Param("endDatetime") OffsetDateTime endDatetime,

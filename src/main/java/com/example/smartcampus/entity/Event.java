@@ -2,8 +2,8 @@ package com.example.smartcampus.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Type;
-import com.example.smartcampus.converter.PostgreSQLEnumType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -23,8 +23,8 @@ public class Event {
     @Column(name = "description", nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "event_type", length = 50)
-    @Type(value = PostgreSQLEnumType.class)
     private EventType eventType;
 
     @Column(name = "location_id")
