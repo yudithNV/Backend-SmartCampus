@@ -6,6 +6,7 @@ import com.example.smartcampus.entity.Event;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
+import com.example.smartcampus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final LocationRepository locationRepository;
+    private final UserRepository userRepository;
 
     public EventResponseDTO createEvent(EventCreateDTO dto, User user) {
         OffsetDateTime startDatetime = parseDatetime(dto.getStartDate(), dto.getStartTime());
@@ -160,6 +162,10 @@ public class EventService {
     }
 
     private EventResponseDTO mapToDTO(Event event) {
+        String authorName = userRepository.findById(event.getAuthorId())
+                .map(User::getFullName)
+                .orElse("Autor desconocido");
+
         return EventResponseDTO.builder()
                 .id(event.getId())
                 .name(event.getName())
@@ -172,6 +178,7 @@ public class EventService {
                 .posterUrl(event.getPosterUrl())
                 .careerId(event.getCareerId())
                 .authorId(event.getAuthorId())
+                .authorName(authorName)
                 .isActive(event.getIsActive())
                 .categoryId(event.getCategoryId())
                 .createdAt(event.getCreatedAt())

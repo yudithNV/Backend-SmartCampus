@@ -25,6 +25,7 @@ public class EventResponseDTO {
     private String posterUrl;
     private Integer careerId;
     private UUID authorId;
+    private String authorName;
     private Boolean isActive;
     private Integer categoryId;
     private OffsetDateTime createdAt;
