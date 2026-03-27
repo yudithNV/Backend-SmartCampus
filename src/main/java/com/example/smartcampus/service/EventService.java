@@ -22,13 +22,28 @@ public class EventService {
     private final EventRepository eventRepository;
 
     public EventResponseDTO createEvent(EventCreateDTO dto, User user) {
+        OffsetDateTime startDatetime = parseDatetime(dto.getStartDate(), dto.getStartTime());
+        OffsetDateTime endDatetime = parseDatetime(dto.getEndDate(), dto.getEndTime());
+
+        // Validar conflicto de horario en la misma ubicación
+        boolean hasConflict = eventRepository.existsConflictingEvent(
+                dto.getLocationId(),
+                startDatetime,
+                endDatetime,
+                0L // Para creación, no hay ID previo
+        );
+
+        if (hasConflict) {
+            throw new RuntimeException("Ya existe un evento en esta ubicación en el horario seleccionado");
+        }
+
         Event event = Event.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .eventType(dto.getEventType())
-                .location(dto.getLocation())
-                .startDatetime(parseDatetime(dto.getStartDate(), dto.getStartTime()))
-                .endDatetime(parseDatetime(dto.getEndDate(), dto.getEndTime()))
+                .locationId(dto.getLocationId())
+                .startDatetime(startDatetime)
+                .endDatetime(endDatetime)
                 .maxCapacity(dto.getMaxCapacity())
                 .posterUrl(dto.getPosterUrl())
                 .careerId(dto.getCareerId())
@@ -76,12 +91,32 @@ public class EventService {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
 
+        // Validar que el usuario sea el autor del evento
+        if (!event.getAuthorId().equals(user.getId())) {
+            throw new RuntimeException("No tienes permiso para editar este evento");
+        }
+
+        OffsetDateTime startDatetime = parseDatetime(dto.getStartDate(), dto.getStartTime());
+        OffsetDateTime endDatetime = parseDatetime(dto.getEndDate(), dto.getEndTime());
+
+        // Validar conflicto de horario en la misma ubicación
+        boolean hasConflict = eventRepository.existsConflictingEvent(
+                dto.getLocationId(),
+                startDatetime,
+                endDatetime,
+                id // Para actualización, excluir el evento actual
+        );
+
+        if (hasConflict) {
+            throw new RuntimeException("Ya existe un evento en esta ubicación en el horario seleccionado");
+        }
+
         event.setName(dto.getName());
         event.setDescription(dto.getDescription());
         event.setEventType(dto.getEventType());
-        event.setLocation(dto.getLocation());
-        event.setStartDatetime(parseDatetime(dto.getStartDate(), dto.getStartTime()));
-        event.setEndDatetime(parseDatetime(dto.getEndDate(), dto.getEndTime()));
+        event.setLocationId(dto.getLocationId());
+        event.setStartDatetime(startDatetime);
+        event.setEndDatetime(endDatetime);
         event.setMaxCapacity(dto.getMaxCapacity());
         event.setPosterUrl(dto.getPosterUrl());
         event.setCareerId(dto.getCareerId());
@@ -98,7 +133,7 @@ public class EventService {
                 event.getName(),
                 event.getDescription(),
                 event.getEventType(),
-                event.getLocation(),
+                event.getLocationId(),
                 event.getStartDatetime(),
                 event.getEndDatetime(),
                 event.getMaxCapacity(),

@@ -20,7 +20,8 @@ public class EventCreateDTO {
     @NotNull(message = "El tipo de evento es requerido")
     private EventType eventType;
 
-    private String location;
+    @NotNull(message = "La ubicación es requerida")
+    private Integer locationId;
 
     // Fecha y hora de inicio (separadas)
     @NotBlank(message = "La fecha de inicio es requerida (formato: YYYY-MM-DD)")

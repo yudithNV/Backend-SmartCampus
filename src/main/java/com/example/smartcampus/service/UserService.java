@@ -37,6 +37,7 @@ public class UserService {
             .role(dto.getRole())
             .status(Status.ACTIVO)
             .careerId(dto.getCareerId())
+            .mustChangePassword(true)
             .createdAt(OffsetDateTime.now())
             .updatedAt(OffsetDateTime.now())
             .build();

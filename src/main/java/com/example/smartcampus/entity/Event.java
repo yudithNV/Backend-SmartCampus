@@ -27,8 +27,8 @@ public class Event {
     @Type(value = PostgreSQLEnumType.class)
     private EventType eventType;
 
-    @Column(name = "location", length = 255)
-    private String location;
+    @Column(name = "location_id")
+    private Integer locationId;
 
     @Column(name = "start_datetime", nullable = false)
     private OffsetDateTime startDatetime;

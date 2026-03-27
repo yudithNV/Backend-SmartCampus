@@ -45,7 +45,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
                 // Carreras
                 .requestMatchers(HttpMethod.GET, "/api/careers").permitAll()
-            
+                // Ubicaciones
+                .requestMatchers(HttpMethod.GET, "/api/locations").permitAll()
+
                 // Noticias — lectura pública
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
@@ -67,6 +69,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/events/**").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("PUBLICADOR")
 
+                // Reclamos — requiere autenticación
+                .requestMatchers("/api/complaints/**").authenticated()
 
                 // Permitir la ruta de error para ver los fallos reales de la base de datos
                 .requestMatchers("/error").permitAll()

@@ -2,6 +2,8 @@ package com.example.smartcampus.repository;
 
 import com.example.smartcampus.entity.Event;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
@@ -25,4 +27,16 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     // Buscar eventos por organizador (autor)
     List<Event> findByAuthorIdOrderByCreatedAtDesc(UUID authorId);
+
+    // Verificar conflicto de horario en la misma ubicación
+    @Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Event e " +
+           "WHERE e.locationId = :locationId " +
+           "AND e.id != :eventId " +
+           "AND ((e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime))")
+    boolean existsConflictingEvent(
+            @Param("locationId") Integer locationId,
+            @Param("startDatetime") OffsetDateTime startDatetime,
+            @Param("endDatetime") OffsetDateTime endDatetime,
+            @Param("eventId") Long eventId
+    );
 }
