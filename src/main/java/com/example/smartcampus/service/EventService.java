@@ -165,4 +165,15 @@ public class EventService {
             throw new IllegalArgumentException("Formato de fecha o hora inválido. Usa YYYY-MM-DD y HH:mm");
         }
     }
+    public void deleteEvent(Long id, User user) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        // Validar que el usuario sea el autor del evento antes de borrar
+        if (!event.getAuthorId().equals(user.getId())) {
+            throw new RuntimeException("No tienes permiso para eliminar este evento");
+        }
+
+        eventRepository.delete(event);
+    }
 }

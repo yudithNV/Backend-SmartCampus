@@ -69,4 +69,11 @@ public class EventController {
         EventResponseDTO result = eventService.updateEvent(id, dto, user);
         return ResponseEntity.ok(ApiResponse.ok("Evento actualizado exitosamente", result));
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Long id, 
+            @AuthenticationPrincipal User user) {
+        eventService.deleteEvent(id, user);
+        return ResponseEntity.ok(ApiResponse.ok("Evento eliminado exitosamente", null));
+    }
 }
