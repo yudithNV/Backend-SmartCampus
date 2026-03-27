@@ -38,8 +38,11 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Auth
-                .requestMatchers("/api/auth/**").permitAll()
+                // Auth - Login sin autenticación
+                .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/auth/test").permitAll()
+                // Auth - /me requiere autenticación
+                .requestMatchers("/api/auth/me").authenticated()
                 // Usuarios
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
