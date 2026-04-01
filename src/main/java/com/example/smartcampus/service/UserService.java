@@ -3,6 +3,9 @@ package com.example.smartcampus.service;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -63,8 +66,10 @@ public class UserService {
         );
     }
 
-    public List<UserListDTO> listAllUsers() {
-        return userRepository.findAll().stream()
+    public Page<UserListDTO> listAllUsers(Pageable pageable) {
+        Page<User> users = userRepository.findAll(pageable);
+
+        List<UserListDTO> dtos = users.stream()
             .map(user -> {
                 UserListDTO.CareerInfo careerInfo = getCareerInfo(user);
                 return new UserListDTO(
@@ -77,6 +82,8 @@ public class UserService {
                 );
             })
             .toList();
+
+        return new PageImpl<>(dtos, pageable, users.getTotalElements());
     }
 
     private UserListDTO.CareerInfo getCareerInfo(User user) {
