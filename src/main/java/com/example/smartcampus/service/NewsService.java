@@ -8,6 +8,8 @@ import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.NewsRepository;
 import com.example.smartcampus.repository.UserRepository;
 
+import exception.ForbiddenException;
+import exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -52,10 +54,10 @@ public class NewsService {
 
     public NewsResponseDTO updateNews(Long id, NewsCreateDTO dto, User author) {
         News news = newsRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Noticia no encontrada"));
+                .orElseThrow(() -> new NotFoundException("Noticia no encontrada con id: " + id));
 
         if (!news.getAuthorId().equals(author.getId())) {
-            throw new RuntimeException("No tienes permiso para editar esta noticia");
+            throw new ForbiddenException("No tienes permiso para editar esta noticia");
         }
 
         if (dto.getTitle()         != null) news.setTitle(dto.getTitle());
@@ -94,5 +96,18 @@ public class NewsService {
         News news = newsRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Noticia no encontrada"));
         return toDTO(news);
+    }
+
+
+    public void deleteNews(Long id, User requester) {
+        News news = newsRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Noticia no encontrada con id: " + id));
+
+        // SCRUM-323: solo el autor puede eliminar su propia noticia
+        if (!news.getAuthorId().equals(requester.getId())) {
+            throw new ForbiddenException("No tienes permiso para eliminar esta noticia");
+        }
+
+        newsRepository.deleteById(id);
     }
 }

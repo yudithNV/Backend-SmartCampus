@@ -55,4 +55,12 @@ public class NewsController {
     public ResponseEntity<NewsResponseDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(newsService.getNewsById(id));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        newsService.deleteNews(id, user);
+        return ResponseEntity.ok().build();
+    }
 }
