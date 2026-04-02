@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ import com.example.smartcampus.entity.Role;
 import com.example.smartcampus.entity.Status;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.UserRepository;
+import com.example.smartcampus.specification.UserSpecification;
 
 import lombok.RequiredArgsConstructor;
 
@@ -66,8 +68,15 @@ public class UserService {
         );
     }
 
-    public Page<UserListDTO> listAllUsers(Pageable pageable) {
-        Page<User> users = userRepository.findAll(pageable);
+    // ✅ CAMBIO: Ahora acepta parámetros de búsqueda Y filtros (role, status)
+    public Page<UserListDTO> listAllUsers(String search, String role, String status, Pageable pageable) {
+        // ✅ Construye la especificación combinando búsqueda + filtros
+        Specification<User> spec = UserSpecification.searchByNameOrEmail(search)
+            .and(UserSpecification.filterByRole(role))
+            .and(UserSpecification.filterByStatus(status));
+
+        // ✅ Busca con Specification + Paginación
+        Page<User> users = userRepository.findAll(spec, pageable);
 
         List<UserListDTO> dtos = users.stream()
             .map(user -> {

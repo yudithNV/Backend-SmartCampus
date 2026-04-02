@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.smartcampus.dto.UserCreateDTO;
@@ -32,7 +33,12 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<UserListDTO>> listAllUsers(Pageable pageable) {
-        return ResponseEntity.ok(userService.listAllUsers(pageable));
+    // ✅ CAMBIO: Agregamos parámetros de búsqueda + filtros (todos opcionales)
+    public ResponseEntity<Page<UserListDTO>> listAllUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String status,
+            Pageable pageable) {
+        return ResponseEntity.ok(userService.listAllUsers(search, role, status, pageable));
     }
 }
