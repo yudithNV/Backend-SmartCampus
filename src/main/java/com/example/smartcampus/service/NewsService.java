@@ -15,6 +15,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,16 +44,12 @@ public class NewsService {
         return toDTO(newsRepository.save(news));
     }
 
-    // ── Todas las publicadas ──
     public List<NewsResponseDTO> getAllPublished() {
-        return newsRepository.findAllByPublishedTrueOrderByCreatedAtDesc()
-                .stream().map(this::toDTO).toList();
+        return toDTOList(newsRepository.findAllByPublishedTrueOrderByCreatedAtDesc());
     }
- 
-    // ── Las del autor autenticado (todas, publicadas y borradores) ──
+
     public List<NewsResponseDTO> getNewsByAuthor(User author) {
-        return newsRepository.findAllByAuthorIdOrderByCreatedAtDesc(author.getId())
-                .stream().map(this::toDTO).toList();
+        return toDTOList(newsRepository.findAllByAuthorIdOrderByCreatedAtDesc(author.getId()));
     }
 
     public NewsResponseDTO updateNews(Long id, NewsCreateDTO dto, User author) {
@@ -72,6 +72,55 @@ public class NewsService {
         return toDTO(newsRepository.save(news));
     }
 
+    public NewsResponseDTO getNewsById(Long id) {
+        News news = newsRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Noticia no encontrada"));
+        return toDTO(news);
+    }
+
+    public void deleteNews(Long id, User requester) {
+        News news = newsRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Noticia no encontrada con id: " + id));
+
+        if (!news.getAuthorId().equals(requester.getId())) {
+            throw new ForbiddenException("No tienes permiso para eliminar esta noticia");
+        }
+
+        newsRepository.deleteById(id);
+    }
+
+    // ── Privados ──────────────────────────────────────────────────
+
+    // Resuelve todos los autores en una sola query (evita el problema N+1)
+    private List<NewsResponseDTO> toDTOList(List<News> newsList) {
+        Set<UUID> authorIds = newsList.stream()
+                .map(News::getAuthorId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, String> authorNames = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        u -> u.getFullName() != null ? u.getFullName() : u.getEmail()
+                ));
+
+        return newsList.stream()
+                .map(n -> toDTO(n, authorNames.getOrDefault(n.getAuthorId(), "Publicador")))
+                .toList();
+    }
+
+    // Para listas: recibe el nombre ya resuelto
+    private NewsResponseDTO toDTO(News n, String authorName) {
+        return new NewsResponseDTO(
+                n.getId(), n.getTitle(), n.getBody(),
+                n.getCategory(), n.getCoverUrl(), n.getAttachmentUrl(),
+                n.getCareerId(), n.getAuthorId(),
+                authorName,
+                n.getPublished(),
+                n.getCreatedAt(), n.getUpdatedAt()
+        );
+    }
+
+    // Para registros individuales (create, update, getById)
     private NewsResponseDTO toDTO(News n) {
         String authorName = "Publicador";
         var userOpt = userRepository.findById(n.getAuthorId());
@@ -79,35 +128,6 @@ public class NewsService {
             User u = userOpt.get();
             authorName = u.getFullName() != null ? u.getFullName() : u.getEmail();
         }
-
-        return new NewsResponseDTO(
-                n.getId(), n.getTitle(), n.getBody(),
-                n.getCategory(), n.getCoverUrl(), n.getAttachmentUrl(),
-                n.getCareerId(), n.getAuthorId(),
-                authorName,  // ← campo nuevo
-                n.getPublished(),
-                n.getCreatedAt(), n.getUpdatedAt()
-        );
-    }
-    
-
-
-    public NewsResponseDTO getNewsById(Long id) {
-        News news = newsRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Noticia no encontrada"));
-        return toDTO(news);
-    }
-
-
-    public void deleteNews(Long id, User requester) {
-        News news = newsRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Noticia no encontrada con id: " + id));
-
-        // SCRUM-323: solo el autor puede eliminar su propia noticia
-        if (!news.getAuthorId().equals(requester.getId())) {
-            throw new ForbiddenException("No tienes permiso para eliminar esta noticia");
-        }
-
-        newsRepository.deleteById(id);
+        return toDTO(n, authorName);
     }
 }
