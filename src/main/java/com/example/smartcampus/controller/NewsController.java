@@ -7,6 +7,8 @@ import com.example.smartcampus.service.NewsService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -62,5 +64,12 @@ public class NewsController {
             @AuthenticationPrincipal User user) {
         newsService.deleteNews(id, user);
         return ResponseEntity.ok().build();
+    }
+    @GetMapping("/recent")
+    public ResponseEntity<Page<NewsResponseDTO>> getRecent(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(newsService.getRecentNews(search, page, size));
     }
 }

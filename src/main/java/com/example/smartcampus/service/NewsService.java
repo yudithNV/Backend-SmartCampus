@@ -11,6 +11,10 @@ import com.example.smartcampus.repository.UserRepository;
 import exception.ForbiddenException;
 import exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -129,5 +133,19 @@ public class NewsService {
             authorName = u.getFullName() != null ? u.getFullName() : u.getEmail();
         }
         return toDTO(n, authorName);
+    }
+
+    public Page<NewsResponseDTO> getRecentNews(String search, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<News> result;
+
+        if (search != null && !search.isBlank()) {
+            result = newsRepository
+                .findByPublishedTrueAndTitleContainingIgnoreCaseOrderByCreatedAtDesc(search, pageable);
+        } else {
+            result = newsRepository.findAllByPublishedTrue(pageable);
+        }
+
+        return result.map(this::toDTO);
     }
 }
