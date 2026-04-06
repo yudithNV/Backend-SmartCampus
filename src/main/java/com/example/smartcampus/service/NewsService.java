@@ -64,13 +64,14 @@ public class NewsService {
             throw new ForbiddenException("No tienes permiso para editar esta noticia");
         }
 
-        if (dto.getTitle()         != null) news.setTitle(dto.getTitle());
-        if (dto.getBody()          != null) news.setBody(dto.getBody());
-        if (dto.getCategory()      != null) news.setCategory(dto.getCategory());
-        if (dto.getCoverUrl()      != null) news.setCoverUrl(dto.getCoverUrl());
+        if (dto.getTitle() != null) news.setTitle(dto.getTitle());
+        if (dto.getBody() != null) news.setBody(dto.getBody());
+        if (dto.getCategory() != null) news.setCategory(dto.getCategory());
+        if (dto.getCoverUrl() != null) news.setCoverUrl(dto.getCoverUrl());
         if (dto.getAttachmentUrl() != null) news.setAttachmentUrl(dto.getAttachmentUrl());
-        if (dto.getCareerId()      != null) news.setCareerId(dto.getCareerId());
-        if (dto.getPublished()     != null) news.setPublished(dto.getPublished());
+        if (dto.getCareerId() != null) news.setCareerId(dto.getCareerId());
+        if (dto.getPublished() != null) news.setPublished(dto.getPublished());
+
         news.setUpdatedAt(OffsetDateTime.now());
 
         return toDTO(newsRepository.save(news));
@@ -84,7 +85,7 @@ public class NewsService {
 
     public void deleteNews(Long id, User requester) {
         News news = newsRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Noticia no encontrada con id: " + id));
+                .orElseThrow(() -> new NotFoundException("Noticia no encontrada"));
 
         if (!news.getAuthorId().equals(requester.getId())) {
             throw new ForbiddenException("No tienes permiso para eliminar esta noticia");
@@ -93,15 +94,42 @@ public class NewsService {
         newsRepository.deleteById(id);
     }
 
-    // ── Privados ──────────────────────────────────────────────────
 
-    // Resuelve todos los autores en una sola query (evita el problema N+1)
+    public Page<NewsResponseDTO> getRecentNews(
+            String search,
+            Integer careerId,
+            NewsCategory category,
+            int page,
+            int size,
+            String sortBy,
+            String sortType) {
+
+        // Validar que sortBy sea un campo válido para evitar SQL injection
+        List<String> allowedSortFields = List.of("created_at", "title", "updated_at");
+        String safeSortBy = allowedSortFields.contains(sortBy) ? sortBy : "created_at";
+
+        Sort sort = sortType != null && sortType.equalsIgnoreCase("ASC")
+                ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        // Normalizar parámetros
+        String searchParam   = (search != null && !search.isBlank()) ? search.trim() : null;
+        String categoryParam = (category != null) ? category.name() : null;
+
+        Page<News> result = newsRepository.findFiltered(searchParam, careerId, categoryParam, pageable);
+
+        return result.map(this::toDTO);
+    }
+
     private List<NewsResponseDTO> toDTOList(List<News> newsList) {
         Set<UUID> authorIds = newsList.stream()
                 .map(News::getAuthorId)
                 .collect(Collectors.toSet());
 
-        Map<UUID, String> authorNames = userRepository.findAllById(authorIds).stream()
+        Map<UUID, String> authorNames = userRepository.findAllById(authorIds)
+                .stream()
                 .collect(Collectors.toMap(
                         User::getId,
                         u -> u.getFullName() != null ? u.getFullName() : u.getEmail()
@@ -112,19 +140,23 @@ public class NewsService {
                 .toList();
     }
 
-    // Para listas: recibe el nombre ya resuelto
     private NewsResponseDTO toDTO(News n, String authorName) {
         return new NewsResponseDTO(
-                n.getId(), n.getTitle(), n.getBody(),
-                n.getCategory(), n.getCoverUrl(), n.getAttachmentUrl(),
-                n.getCareerId(), n.getAuthorId(),
+                n.getId(),
+                n.getTitle(),
+                n.getBody(),
+                n.getCategory(),
+                n.getCoverUrl(),
+                n.getAttachmentUrl(),
+                n.getCareerId(),
+                n.getAuthorId(),
                 authorName,
                 n.getPublished(),
-                n.getCreatedAt(), n.getUpdatedAt()
+                n.getCreatedAt(),
+                n.getUpdatedAt()
         );
     }
 
-    // Para registros individuales (create, update, getById)
     private NewsResponseDTO toDTO(News n) {
         String authorName = "Publicador";
         var userOpt = userRepository.findById(n.getAuthorId());
@@ -133,19 +165,5 @@ public class NewsService {
             authorName = u.getFullName() != null ? u.getFullName() : u.getEmail();
         }
         return toDTO(n, authorName);
-    }
-
-    public Page<NewsResponseDTO> getRecentNews(String search, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<News> result;
-
-        if (search != null && !search.isBlank()) {
-            result = newsRepository
-                .findByPublishedTrueAndTitleContainingIgnoreCaseOrderByCreatedAtDesc(search, pageable);
-        } else {
-            result = newsRepository.findAllByPublishedTrue(pageable);
-        }
-
-        return result.map(this::toDTO);
     }
 }
