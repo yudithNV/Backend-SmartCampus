@@ -77,6 +77,9 @@ public class SecurityConfig {
 
                 // Permitir la ruta de error para ver los fallos reales de la base de datos
                 .requestMatchers("/error").permitAll()
+
+                // Categorías
+                .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
                 // Todo lo demás autenticado
                 .anyRequest().authenticated()
             )

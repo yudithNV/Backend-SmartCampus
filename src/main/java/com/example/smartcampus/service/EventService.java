@@ -1,19 +1,5 @@
 package com.example.smartcampus.service;
 
-import com.example.smartcampus.dto.EventCreateDTO;
-import com.example.smartcampus.dto.EventResponseDTO;
-import com.example.smartcampus.entity.Event;
-import com.example.smartcampus.entity.User;
-import com.example.smartcampus.repository.EventRepository;
-import com.example.smartcampus.repository.LocationRepository;
-import com.example.smartcampus.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
@@ -22,6 +8,22 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
+import com.example.smartcampus.dto.EventCreateDTO;
+import com.example.smartcampus.dto.EventResponseDTO;
+import com.example.smartcampus.entity.Event;
+import com.example.smartcampus.entity.User;
+import com.example.smartcampus.repository.EventRepository;
+import com.example.smartcampus.repository.LocationRepository;
+import com.example.smartcampus.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -216,6 +218,7 @@ public class EventService {
             throw new IllegalArgumentException("Formato de fecha o hora inválido. Usa YYYY-MM-DD y HH:mm");
         }
     }
+
     public void deleteEvent(Long id, User user) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
@@ -228,13 +231,35 @@ public class EventService {
         eventRepository.delete(event);
     }
 
-    public Page<EventResponseDTO> getRecentEvents(String search, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("startDatetime").ascending());
+    public Page<EventResponseDTO> getRecentEvents(String search, Integer categoryId, Integer careerId, int page, int size) {
+        //Pageable pageable = PageRequest.of(page, size, Sort.by("startDatetime").ascending());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Event> result;
 
-        if (search != null && !search.isBlank()) {
-            result = eventRepository
-                .findByIsActiveTrueAndNameContainingIgnoreCaseOrderByStartDatetimeAsc(search, pageable);
+        boolean hasSearch = search != null && !search.isBlank();
+        boolean hasCategory = categoryId != null;
+        boolean hasCareer = careerId != null;
+
+        // Filtrado dinámico según los parámetros presentes
+        if (hasSearch && hasCategory && hasCareer) {
+            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryIdAndCareerId(
+                search, categoryId, careerId, pageable);
+        } else if (hasSearch && hasCategory) {
+            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryId(
+                search, categoryId, pageable);
+        } else if (hasSearch && hasCareer) {
+            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCareerId(
+                search, careerId, pageable);
+        } else if (hasCategory && hasCareer) {
+            result = eventRepository.findByIsActiveTrueAndCategoryIdAndCareerId(
+                categoryId, careerId, pageable);
+        } else if (hasSearch) {
+            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCase(
+                search, pageable);
+        } else if (hasCategory) {
+            result = eventRepository.findByIsActiveTrueAndCategoryId(categoryId, pageable);
+        } else if (hasCareer) {
+            result = eventRepository.findByIsActiveTrueAndCareerId(careerId, pageable);
         } else {
             result = eventRepository.findAllByIsActiveTrue(pageable);
         }

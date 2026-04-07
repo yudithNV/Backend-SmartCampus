@@ -56,9 +56,31 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("eventId") Long eventId
     );
 
-    // Métodos para paginación y búsqueda
+    // Métodos para paginación y búsqueda con filtrado dinámico
     Page<Event> findAllByIsActiveTrue(Pageable pageable);
 
-    Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseOrderByStartDatetimeAsc(
-            String name, Pageable pageable);
+    // Solo búsqueda por nombre
+    Page<Event> findByIsActiveTrueAndNameContainingIgnoreCase(String name, Pageable pageable);
+
+    // Solo filtro por categoría
+    Page<Event> findByIsActiveTrueAndCategoryId(Integer categoryId, Pageable pageable);
+
+    // Solo filtro por carrera
+    Page<Event> findByIsActiveTrueAndCareerId(Integer careerId, Pageable pageable);
+
+    // Búsqueda + categoría
+    Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryId(
+            String name, Integer categoryId, Pageable pageable);
+
+    // Búsqueda + carrera
+    Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseAndCareerId(
+            String name, Integer careerId, Pageable pageable);
+
+    // Categoría + carrera
+    Page<Event> findByIsActiveTrueAndCategoryIdAndCareerId(
+            Integer categoryId, Integer careerId, Pageable pageable);
+
+    // Búsqueda + categoría + carrera
+    Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryIdAndCareerId(
+            String name, Integer categoryId, Integer careerId, Pageable pageable);
 }

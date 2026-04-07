@@ -81,8 +81,10 @@ public class EventController {
     @GetMapping("/recent")
     public ResponseEntity<Page<EventResponseDTO>> getRecent(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer categoryId,
+            @RequestParam(required = false) Integer careerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(eventService.getRecentEvents(search, page, size));
+        return ResponseEntity.ok(eventService.getRecentEvents(search, categoryId, careerId, page, size));
     }
 }
