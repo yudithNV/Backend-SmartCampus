@@ -1,6 +1,8 @@
 package com.example.smartcampus.repository;
 
 import com.example.smartcampus.entity.Event;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -53,4 +55,10 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("endDatetime") OffsetDateTime endDatetime,
             @Param("eventId") Long eventId
     );
+
+    // Métodos para paginación y búsqueda
+    Page<Event> findAllByIsActiveTrue(Pageable pageable);
+
+    Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseOrderByStartDatetimeAsc(
+            String name, Pageable pageable);
 }

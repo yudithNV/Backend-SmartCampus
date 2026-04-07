@@ -8,6 +8,7 @@ import com.example.smartcampus.service.EventService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -75,5 +76,13 @@ public class EventController {
             @AuthenticationPrincipal User user) {
         eventService.deleteEvent(id, user);
         return ResponseEntity.ok(ApiResponse.ok("Evento eliminado exitosamente", null));
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<Page<EventResponseDTO>> getRecent(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(eventService.getRecentEvents(search, page, size));
     }
 }

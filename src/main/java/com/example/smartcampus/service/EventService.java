@@ -8,6 +8,10 @@ import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
 import com.example.smartcampus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -222,5 +226,19 @@ public class EventService {
         }
 
         eventRepository.delete(event);
+    }
+
+    public Page<EventResponseDTO> getRecentEvents(String search, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("startDatetime").ascending());
+        Page<Event> result;
+
+        if (search != null && !search.isBlank()) {
+            result = eventRepository
+                .findByIsActiveTrueAndNameContainingIgnoreCaseOrderByStartDatetimeAsc(search, pageable);
+        } else {
+            result = eventRepository.findAllByIsActiveTrue(pageable);
+        }
+
+        return result.map(this::mapToDTO);
     }
 }
