@@ -2,6 +2,7 @@ package com.example.smartcampus.controller;
 
 import com.example.smartcampus.dto.NewsCreateDTO;
 import com.example.smartcampus.dto.NewsResponseDTO;
+import com.example.smartcampus.entity.NewsCategory;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.service.NewsService;
 
@@ -14,7 +15,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/news")
@@ -37,25 +37,25 @@ public class NewsController {
         return ResponseEntity.ok(newsService.getAllPublished());
     }
 
-    // ── Listar las noticias del publicador autenticado ──
     @GetMapping("/my")
     public ResponseEntity<List<NewsResponseDTO>> getMyNews(
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(newsService.getNewsByAuthor(user));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<NewsResponseDTO> getById(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(newsService.getNewsById(id));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<NewsResponseDTO> update(
-            @PathVariable Long id,        
+            @PathVariable Long id,
             @RequestBody NewsCreateDTO dto,
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(newsService.updateNews(id, dto, user));
-    }
-
-
-    @GetMapping("/{id}")
-    public ResponseEntity<NewsResponseDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(newsService.getNewsById(id));
     }
 
     @DeleteMapping("/{id}")
@@ -65,11 +65,20 @@ public class NewsController {
         newsService.deleteNews(id, user);
         return ResponseEntity.ok().build();
     }
+
+    // Feed con filtros
     @GetMapping("/recent")
-    public ResponseEntity<Page<NewsResponseDTO>> getRecent(
+    public ResponseEntity<Page<NewsResponseDTO>> getRecentNews(
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(newsService.getRecentNews(search, page, size));
+            @RequestParam(required = false) Integer careerId,
+            @RequestParam(required = false) NewsCategory category,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC")      String sortType) {
+
+        return ResponseEntity.ok(
+                newsService.getRecentNews(search, careerId, category, page, size, sortBy, sortType)
+        );
     }
 }
