@@ -33,12 +33,15 @@ public class UserController {
     }
 
     @GetMapping
-    // ✅ CAMBIO: Agregamos parámetros de búsqueda + filtros (todos opcionales)
+    // ✅ CAMBIO: Agregamos paginación, ordenación y filtros (todos opcionales)
     public ResponseEntity<Page<UserListDTO>> listAllUsers(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String role,
             @RequestParam(required = false) String status,
-            Pageable pageable) {
-        return ResponseEntity.ok(userService.listAllUsers(search, role, status, pageable));
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortType) {
+        return ResponseEntity.ok(userService.listAllUsers(search, role, status, page, size, sortBy, sortType));
     }
 }

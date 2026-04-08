@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -68,8 +70,28 @@ public class UserService {
         );
     }
 
-    // ✅ CAMBIO: Ahora acepta parámetros de búsqueda Y filtros (role, status)
-    public Page<UserListDTO> listAllUsers(String search, String role, String status, Pageable pageable) {
+    // ✅ CAMBIO: Ahora acepta paginación, ordenación y filtros
+    public Page<UserListDTO> listAllUsers(
+            String search, 
+            String role, 
+            String status, 
+            int page, 
+            int size, 
+            String sortBy, 
+            String sortType) {
+        
+        // ✅ Validar que sortBy sea un campo válido para evitar SQL injection
+        List<String> allowedSortFields = List.of("createdAt", "fullName", "email", "role", "status");
+        String safeSortBy = allowedSortFields.contains(sortBy) ? sortBy : "createdAt";
+
+        // ✅ Construir el Sort (ASC o DESC)
+        Sort sort = sortType != null && sortType.equalsIgnoreCase("ASC")
+                ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
+
+        // ✅ Crear el Pageable con paginación + ordenación
+        Pageable pageable = PageRequest.of(page, size, sort);
+
         // ✅ Construye la especificación combinando búsqueda + filtros
         Specification<User> spec = UserSpecification.searchByNameOrEmail(search)
             .and(UserSpecification.filterByRole(role))

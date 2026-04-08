@@ -84,7 +84,9 @@ public class EventController {
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) Integer careerId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        return ResponseEntity.ok(eventService.getRecentEvents(search, categoryId, careerId, page, size));
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortType) {
+        return ResponseEntity.ok(eventService.getRecentEvents(search, categoryId, careerId, page, size, sortBy, sortType));
     }
 }

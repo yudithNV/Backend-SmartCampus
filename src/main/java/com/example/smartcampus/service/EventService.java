@@ -231,9 +231,19 @@ public class EventService {
         eventRepository.delete(event);
     }
 
-    public Page<EventResponseDTO> getRecentEvents(String search, Integer categoryId, Integer careerId, int page, int size) {
-        //Pageable pageable = PageRequest.of(page, size, Sort.by("startDatetime").ascending());
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    public Page<EventResponseDTO> getRecentEvents(String search, Integer categoryId, Integer careerId, int page, int size, String sortBy, String sortType) {
+        // ✅ Validar que sortBy sea un campo válido para evitar SQL injection
+        List<String> allowedSortFields = List.of("createdAt", "startDatetime", "endDatetime", "name", "maxCapacity");
+        String safeSortBy = allowedSortFields.contains(sortBy) ? sortBy : "createdAt";
+
+        // ✅ Construir el Sort (ASC o DESC)
+        Sort sort = sortType != null && sortType.equalsIgnoreCase("ASC")
+                ? Sort.by(safeSortBy).ascending()
+                : Sort.by(safeSortBy).descending();
+
+        // ✅ Crear el Pageable con paginación + ordenación
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
         Page<Event> result;
 
         boolean hasSearch = search != null && !search.isBlank();
