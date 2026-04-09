@@ -10,7 +10,6 @@ import java.time.OffsetDateTime;
 public class AccessLogResponseDTO {
     private Long id;
     private String email;
-    private String ipAddress;
     private Boolean success;
     private String userAgent;
     private OffsetDateTime createdAt;

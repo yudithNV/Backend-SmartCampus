@@ -18,8 +18,8 @@ public class AccessLogController {
 
     // GET /api/access-logs — solo ADMINISTRADOR (configurado en SecurityConfig)
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AccessLogResponseDTO>>> getFailedAttempts() {
-        List<AccessLogResponseDTO> result = accessLogService.getFailedAttempts();
+    public ResponseEntity<ApiResponse<List<AccessLogResponseDTO>>> getAllLogs() {
+        List<AccessLogResponseDTO> result = accessLogService.getAllLogs();
         return ResponseEntity.ok(ApiResponse.ok("Historial de accesos obtenido", result));
     }
 }
