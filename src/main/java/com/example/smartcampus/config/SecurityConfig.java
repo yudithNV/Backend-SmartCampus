@@ -38,16 +38,18 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Auth - Login sin autenticación
+                // Auth
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/test").permitAll()
-                // Auth - /me requiere autenticación
                 .requestMatchers("/api/auth/me").authenticated()
+
                 // Usuarios
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
+
                 // Carreras
                 .requestMatchers(HttpMethod.GET, "/api/careers").permitAll()
+
                 // Ubicaciones
                 .requestMatchers(HttpMethod.GET, "/api/locations").permitAll()
 
@@ -58,28 +60,33 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,   "/api/news").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.PUT,    "/api/news/**").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/news/**").hasRole("PUBLICADOR")
-                // Subida de archivos — permitAll para evitar problemas con multipart y JWT
-                // El frontend igual manda el token; la validación real es en SupabaseStorageService
+
+                // Subida de archivos
                 .requestMatchers(HttpMethod.POST, "/api/files/**").permitAll()
+
                 // Perfil
-                .requestMatchers("/api/profile/**").hasRole("ESTUDIANTE")
+                .requestMatchers("/api/profile/**").hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
 
                 // Eventos — lectura pública
                 .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                 // Eventos — escritura solo PUBLICADOR
-                .requestMatchers(HttpMethod.POST, "/api/events").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.PUT, "/api/events/**").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.POST,   "/api/events").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.PUT,    "/api/events/**").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("PUBLICADOR")
 
-                // Reclamos — requiere autenticación
+                // Reclamos
                 .requestMatchers("/api/complaints/**").authenticated()
-
-                // Permitir la ruta de error para ver los fallos reales de la base de datos
-                .requestMatchers("/error").permitAll()
 
                 // Categorías
                 .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
+
+                // ── NUEVO: Logs de acceso — solo ADMINISTRADOR ────────────────
+                .requestMatchers(HttpMethod.GET, "/api/access-logs").hasRole("ADMINISTRADOR")
+
+                // Error
+                .requestMatchers("/error").permitAll()
+
                 // Todo lo demás autenticado
                 .anyRequest().authenticated()
             )
