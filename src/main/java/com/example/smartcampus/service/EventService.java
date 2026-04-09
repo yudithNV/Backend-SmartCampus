@@ -227,8 +227,9 @@ public class EventService {
         if (!event.getAuthorId().equals(user.getId())) {
             throw new RuntimeException("No tienes permiso para eliminar este evento");
         }
-
-        eventRepository.delete(event);
+        // Eliminación lógica: el evento deja de ser visible pero persiste en BD
+        event.setIsActive(false);
+        eventRepository.save(event);
     }
 
     public Page<EventResponseDTO> getRecentEvents(String search, Integer categoryId, Integer careerId, int page, int size, String sortBy, String sortType) {
