@@ -6,6 +6,7 @@ import com.example.smartcampus.dto.LoginResponseDTO;
 import com.example.smartcampus.dto.UserInfoDTO;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
@@ -23,9 +24,16 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDTO request) {
+    public ResponseEntity<?> login(@RequestBody LoginRequestDTO request,
+                                   HttpServletRequest httpRequest) {   // ← NUEVO parámetro
         try {
-            return ResponseEntity.ok(authService.login(request));
+            // Extrae IP real considerando proxies
+            String ip = httpRequest.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isBlank()) ip = httpRequest.getRemoteAddr();
+
+            String userAgent = httpRequest.getHeader("User-Agent");
+
+            return ResponseEntity.ok(authService.login(request, ip, userAgent));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", e.getMessage()));
@@ -45,7 +53,7 @@ public class AuthController {
     }
 
     @GetMapping("/test")
-    public String test(){
+    public String test() {
         return "login endpoint funcionando";
     }
 }
