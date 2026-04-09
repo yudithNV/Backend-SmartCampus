@@ -179,11 +179,12 @@ public class EventService {
                 .map(User::getFullName)
                 .orElse("Autor desconocido");
 
-        LocationDTO locationDTO = event.getLocationId() != null
-                ? locationRepository.findById(event.getLocationId())
+        LocationDTO locationDTO = null;
+        if (event.getLocationId() != null) {
+            locationDTO = locationRepository.findById(event.getLocationId())
                     .map(loc -> new LocationDTO(loc.getId(), loc.getName(), loc.getBlock(), loc.getDescription()))
-                    .orElse(null)
-                : null;
+                    .orElse(null);
+        }
 
         CareerDTO careerDTO = event.getCareerId() != null
                 ? careerRepository.findById(event.getCareerId())
@@ -252,9 +253,8 @@ public class EventService {
         if (!event.getAuthorId().equals(user.getId())) {
             throw new RuntimeException("No tienes permiso para eliminar este evento");
         }
-        // Eliminación lógica: el evento deja de ser visible pero persiste en BD
-        event.setIsActive(false);
-        eventRepository.save(event);
+
+        eventRepository.deleteById(id);
     }
 
     public Page<EventResponseDTO> getRecentEvents(String search, Integer categoryId, Integer careerId, int page, int size, String sortBy, String sortType) {
