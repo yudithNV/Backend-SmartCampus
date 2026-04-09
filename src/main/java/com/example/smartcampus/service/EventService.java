@@ -17,11 +17,16 @@ import org.springframework.stereotype.Service;
 
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
+import com.example.smartcampus.dto.LocationDTO;
+import com.example.smartcampus.dto.CareerDTO;
+import com.example.smartcampus.dto.CategoryDTO;
 import com.example.smartcampus.entity.Event;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
 import com.example.smartcampus.repository.UserRepository;
+import com.example.smartcampus.repository.CareerRepository;
+import com.example.smartcampus.repository.CategoryRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,6 +37,8 @@ public class EventService {
     private final EventRepository eventRepository;
     private final LocationRepository locationRepository;
     private final UserRepository userRepository;
+    private final CareerRepository careerRepository;
+    private final CategoryRepository categoryRepository;
 
     public EventResponseDTO createEvent(EventCreateDTO dto, User user) {
         OffsetDateTime startDatetime = parseDatetime(dto.getStartDate(), dto.getStartTime());
@@ -172,21 +179,39 @@ public class EventService {
                 .map(User::getFullName)
                 .orElse("Autor desconocido");
 
+        LocationDTO locationDTO = event.getLocationId() != null
+                ? locationRepository.findById(event.getLocationId())
+                    .map(loc -> new LocationDTO(loc.getId(), loc.getName(), loc.getBlock(), loc.getDescription()))
+                    .orElse(null)
+                : null;
+
+        CareerDTO careerDTO = event.getCareerId() != null
+                ? careerRepository.findById(event.getCareerId())
+                    .map(career -> new CareerDTO(career.getId(), career.getName(), career.getCode()))
+                    .orElse(null)
+                : null;
+
+        CategoryDTO categoryDTO = event.getCategoryId() != null
+                ? categoryRepository.findById(event.getCategoryId().longValue())
+                    .map(category -> new CategoryDTO(category.getId(), category.getName(), category.getColorHex()))
+                    .orElse(null)
+                : null;
+
         return EventResponseDTO.builder()
                 .id(event.getId())
                 .name(event.getName())
                 .description(event.getDescription())
                 .eventType(event.getEventType())
-                .locationId(event.getLocationId())
+                .location(locationDTO)
                 .startDatetime(event.getStartDatetime())
                 .endDatetime(event.getEndDatetime())
                 .maxCapacity(event.getMaxCapacity())
                 .posterUrl(event.getPosterUrl())
-                .careerId(event.getCareerId())
+                .career(careerDTO)
                 .authorId(event.getAuthorId())
                 .authorName(authorName)
                 .isActive(event.getIsActive())
-                .categoryId(event.getCategoryId())
+                .category(categoryDTO)
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
                 .build();

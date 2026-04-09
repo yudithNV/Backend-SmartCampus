@@ -18,16 +18,16 @@ public class EventResponseDTO {
     private String name;
     private String description;
     private EventType eventType;
-    private Integer locationId;
+    private LocationDTO location;
     private OffsetDateTime startDatetime;
     private OffsetDateTime endDatetime;
     private Integer maxCapacity;
     private String posterUrl;
-    private Integer careerId;
+    private CareerDTO career;
     private UUID authorId;
     private String authorName;
     private Boolean isActive;
-    private Integer categoryId;
+    private CategoryDTO category;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }

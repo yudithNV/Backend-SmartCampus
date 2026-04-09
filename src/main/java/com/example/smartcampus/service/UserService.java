@@ -73,6 +73,7 @@ public class UserService {
     // ✅ CAMBIO: Ahora acepta paginación, ordenación y filtros
     public Page<UserListDTO> listAllUsers(
             String search, 
+            String career,
             String role, 
             String status, 
             int page, 
@@ -94,6 +95,7 @@ public class UserService {
 
         // ✅ Construye la especificación combinando búsqueda + filtros
         Specification<User> spec = UserSpecification.searchByNameOrEmail(search)
+            .and(UserSpecification.filterByCareer(career))
             .and(UserSpecification.filterByRole(role))
             .and(UserSpecification.filterByStatus(status));
 
@@ -106,6 +108,7 @@ public class UserService {
                 return new UserListDTO(
                     user.getId(),
                     user.getFullName(),
+                    user.getEmail(),
                     user.getRole().name(),
                     careerInfo,
                     user.getStatus().name(),

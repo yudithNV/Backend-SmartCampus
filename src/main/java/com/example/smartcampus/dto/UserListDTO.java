@@ -11,6 +11,7 @@ public class UserListDTO {
 
     private UUID id;
     private String fullName;
+    private String email;
     private String role;
     private CareerInfo career;
     private String status;

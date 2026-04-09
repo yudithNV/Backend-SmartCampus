@@ -1,14 +1,15 @@
 package com.example.smartcampus.specification;
 
+import org.springframework.data.jpa.domain.Specification;
+
 import com.example.smartcampus.entity.Role;
 import com.example.smartcampus.entity.Status;
 import com.example.smartcampus.entity.User;
-import org.springframework.data.jpa.domain.Specification;
 
 // ✅ NUEVAS CLASES: Clase para construir las búsquedas con Specification
 public class UserSpecification {
 
-    // ✅ Búsqueda por nombre O email (se usará con .and() en el service)
+    // ✅ Búsqueda por nombre, email O carrera
     public static Specification<User> searchByNameOrEmail(String search) {
         return (root, query, criteriaBuilder) -> {
             if (search == null || search.isEmpty()) {
@@ -17,11 +18,28 @@ public class UserSpecification {
 
             String searchPattern = "%" + search.toLowerCase() + "%";
 
-            // Busca en fullName O email
+            // Busca en fullName O email O nombre de carrera
             return criteriaBuilder.or(
                 criteriaBuilder.like(criteriaBuilder.lower(root.get("fullName")), searchPattern),
                 criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), searchPattern)
             );
+        };
+    }
+
+    // ✅ FILTRO POR CARRERA (agregado para filtros)
+    public static Specification<User> filterByCareer(String career) {
+        return (root, query, criteriaBuilder) -> {
+            if (career == null || career.isEmpty()) {
+                return criteriaBuilder.conjunction(); // Si no hay filtro, devuelve true
+            }
+
+            try {
+                Integer careerId = Integer.parseInt(career);
+                return criteriaBuilder.equal(root.get("careerId"), careerId);
+            } catch (NumberFormatException e) {
+                // Si la carrera no es un número válido, no filtra
+                return criteriaBuilder.conjunction();
+            }
         };
     }
 
