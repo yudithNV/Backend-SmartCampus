@@ -16,6 +16,7 @@ public class NewsResponseDTO {
     private String coverUrl;
     private String attachmentUrl;
     private Integer careerId;
+    private String careerName;  
     private UUID authorId;
     private String authorName; 
     private Boolean published;

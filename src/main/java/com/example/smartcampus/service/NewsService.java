@@ -2,9 +2,11 @@ package com.example.smartcampus.service;
 
 import com.example.smartcampus.dto.NewsCreateDTO;
 import com.example.smartcampus.dto.NewsResponseDTO;
+import com.example.smartcampus.entity.Career;
 import com.example.smartcampus.entity.News;
 import com.example.smartcampus.entity.NewsCategory;
 import com.example.smartcampus.entity.User;
+import com.example.smartcampus.repository.CareerRepository;
 import com.example.smartcampus.repository.NewsRepository;
 import com.example.smartcampus.repository.UserRepository;
 
@@ -23,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.Objects; 
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +33,7 @@ public class NewsService {
 
     private final NewsRepository newsRepository;
     private final UserRepository userRepository;
+    private final CareerRepository careerRepository;
 
     public NewsResponseDTO createNews(NewsCreateDTO dto, User author) {
         News news = News.builder()
@@ -97,18 +101,25 @@ public class NewsService {
 
     public Page<NewsResponseDTO> getRecentNews(
             String search,
-            Integer careerId,
+            String careerName,       
             NewsCategory category,
             int page,
             int size,
             String sortBy,
             String sortType) {
+
+        Integer careerId = null;
+        if (careerName != null && !careerName.isBlank()) {
+            careerId = careerRepository.findByNameUnaccented(careerName.trim())
+                    .map(Career::getId)
+                    .orElse(-1);
+        }
                 
         Map<String, String> fieldMap = Map.of(
                         "createdAt",  "created_at",
                         "updatedAt",  "updated_at",
                         "title",      "title",
-                        "created_at", "created_at",  // por si el frontend ya manda snake_case
+                        "created_at", "created_at",  
                         "updated_at", "updated_at"
                 );
                 String safeSortBy = fieldMap.getOrDefault(sortBy, "created_at");
@@ -125,8 +136,8 @@ public class NewsService {
 
         Page<News> result = newsRepository.findFiltered(searchParam, careerId, categoryParam, pageable);
 
-        return result.map(this::toDTO);
-    }
+        return result.map(n -> toDTO(n));  
+  }
 
     private List<NewsResponseDTO> toDTOList(List<News> newsList) {
         Set<UUID> authorIds = newsList.stream()
@@ -140,12 +151,23 @@ public class NewsService {
                         u -> u.getFullName() != null ? u.getFullName() : u.getEmail()
                 ));
 
+        Set<Integer> careerIds = newsList.stream()
+                .map(News::getCareerId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Integer, String> careerNames = careerRepository.findAllById(careerIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        Career::getId,
+                        Career::getName
+                ));
+
         return newsList.stream()
-                .map(n -> toDTO(n, authorNames.getOrDefault(n.getAuthorId(), "Publicador")))
+                .map(n -> toDTO(n, authorNames.getOrDefault(n.getAuthorId(), "Publicador"), careerNames.getOrDefault(n.getCareerId(), null)))
                 .toList();
     }
 
-    private NewsResponseDTO toDTO(News n, String authorName) {
+    private NewsResponseDTO toDTO(News n, String authorName, String careerName) {
         return new NewsResponseDTO(
                 n.getId(),
                 n.getTitle(),
@@ -154,6 +176,7 @@ public class NewsService {
                 n.getCoverUrl(),
                 n.getAttachmentUrl(),
                 n.getCareerId(),
+                careerName, 
                 n.getAuthorId(),
                 authorName,
                 n.getPublished(),
@@ -162,13 +185,18 @@ public class NewsService {
         );
     }
 
-    private NewsResponseDTO toDTO(News n) {
+     private NewsResponseDTO toDTO(News n) {
         String authorName = "Publicador";
         var userOpt = userRepository.findById(n.getAuthorId());
         if (userOpt.isPresent()) {
             User u = userOpt.get();
             authorName = u.getFullName() != null ? u.getFullName() : u.getEmail();
         }
-        return toDTO(n, authorName);
+        String careerName = n.getCareerId() != null
+                ? careerRepository.findById(n.getCareerId())
+                        .map(Career::getName)
+                        .orElse(null)
+                : null;
+        return toDTO(n, authorName, careerName);
     }
 }

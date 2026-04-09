@@ -70,7 +70,7 @@ public class NewsController {
     @GetMapping("/recent")
     public ResponseEntity<Page<NewsResponseDTO>> getRecentNews(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) Integer careerId,
+            @RequestParam(required = false) String careerName,   
             @RequestParam(required = false) NewsCategory category,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size,
@@ -78,7 +78,7 @@ public class NewsController {
             @RequestParam(defaultValue = "DESC")      String sortType) {
 
         return ResponseEntity.ok(
-                newsService.getRecentNews(search, careerId, category, page, size, sortBy, sortType)
+                newsService.getRecentNews(search, careerName, category, page, size, sortBy, sortType)
         );
     }
 }
