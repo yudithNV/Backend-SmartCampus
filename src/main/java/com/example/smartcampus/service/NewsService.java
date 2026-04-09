@@ -103,10 +103,15 @@ public class NewsService {
             int size,
             String sortBy,
             String sortType) {
-
-        // Validar que sortBy sea un campo válido para evitar SQL injection
-        List<String> allowedSortFields = List.of("created_at", "title", "updated_at");
-        String safeSortBy = allowedSortFields.contains(sortBy) ? sortBy : "created_at";
+                
+        Map<String, String> fieldMap = Map.of(
+                        "createdAt",  "created_at",
+                        "updatedAt",  "updated_at",
+                        "title",      "title",
+                        "created_at", "created_at",  // por si el frontend ya manda snake_case
+                        "updated_at", "updated_at"
+                );
+                String safeSortBy = fieldMap.getOrDefault(sortBy, "created_at");
 
         Sort sort = sortType != null && sortType.equalsIgnoreCase("ASC")
                 ? Sort.by(safeSortBy).ascending()
