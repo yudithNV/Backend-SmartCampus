@@ -9,7 +9,8 @@ import java.util.List;
 
 @Repository
 public interface AccessLogRepository extends JpaRepository<AccessLog, Long> {
-
+    // 🔥 NUEVO: TODOS los logs (exitosos y fallidos), ordenados por fecha DESC
+    List<AccessLog> findAllByOrderByCreatedAtDesc();
     // Solo intentos fallidos, más recientes primero
     List<AccessLog> findBySuccessFalseOrderByCreatedAtDesc();
 

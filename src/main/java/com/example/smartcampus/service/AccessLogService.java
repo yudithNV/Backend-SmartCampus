@@ -29,20 +29,19 @@ public class AccessLogService {
         repository.save(log);
     }
 
-    // ─── Obtener todos los intentos fallidos con flag de sospechoso ───────────
-    public List<AccessLogResponseDTO> getFailedAttempts() {
+    // ─── Obtener todos los logs con flag de sospechoso ────────────────────────
+    public List<AccessLogResponseDTO> getAllLogs() {
         // Precalcula qué correos son sospechosos para no hacer N+1 queries
         List<Object[]> suspiciousRaw = repository.findSuspiciousEmails(SUSPICIOUS_THRESHOLD);
         List<String> suspiciousEmails = suspiciousRaw.stream()
                 .map(row -> (String) row[0])
                 .collect(Collectors.toList());
 
-        return repository.findBySuccessFalseOrderByCreatedAtDesc()
+        return repository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(log -> new AccessLogResponseDTO(
                         log.getId(),
                         log.getEmail(),
-                        log.getIpAddress(),
                         log.getSuccess(),
                         log.getUserAgent(),
                         log.getCreatedAt(),
