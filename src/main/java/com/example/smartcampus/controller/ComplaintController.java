@@ -28,7 +28,8 @@ public class ComplaintController {
             "image/jpeg", "image/png", "image/webp", "image/gif"
     );
     private static final Set<String> ALLOWED_DOC_TYPES = Set.of(
-            "application/pdf"
+            "application/pdf",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     );
 
     /**
@@ -72,7 +73,7 @@ public class ComplaintController {
                 if (contentType == null ||
                         (!ALLOWED_IMAGE_TYPES.contains(contentType) && !ALLOWED_DOC_TYPES.contains(contentType))) {
                     return ResponseEntity.badRequest()
-                            .body(ApiResponse.error("Solo se permiten imágenes (JPG, PNG, WEBP, GIF) o archivos PDF"));
+                        .body(ApiResponse.error("Solo se permiten imágenes (JPG, PNG, WEBP, GIF), PDF o DOCX"));
                 }
             }
 
