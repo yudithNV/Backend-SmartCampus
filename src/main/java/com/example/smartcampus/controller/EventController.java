@@ -72,10 +72,26 @@ public class EventController {
     }
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @AuthenticationPrincipal User user) {
         eventService.deleteEvent(id, user);
         return ResponseEntity.ok(ApiResponse.ok("Evento eliminado exitosamente", null));
+    }
+
+    @PostMapping("/{id}/register")
+    public ResponseEntity<ApiResponse<Void>> registerToEvent(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        eventService.registerToEvent(id, user);
+        return ResponseEntity.ok(ApiResponse.ok("Inscripción realizada con éxito", null));
+    }
+
+    @DeleteMapping("/{id}/unregister")
+    public ResponseEntity<ApiResponse<Void>> unregisterFromEvent(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        eventService.unregisterFromEvent(id, user);
+        return ResponseEntity.ok(ApiResponse.ok("Inscripción cancelada con éxito", null));
     }
 
     @GetMapping("/recent")

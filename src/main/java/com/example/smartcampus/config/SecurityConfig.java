@@ -70,6 +70,9 @@ public class SecurityConfig {
                 // Eventos — lectura pública
                 .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
+                // Inscripción/cancelación de eventos (usuarios autenticados)
+                .requestMatchers(HttpMethod.POST, "/api/events/*/register").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/events/*/unregister").authenticated()
                 // Eventos — escritura solo PUBLICADOR
                 .requestMatchers(HttpMethod.POST,   "/api/events").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.PUT,    "/api/events/**").hasRole("PUBLICADOR")

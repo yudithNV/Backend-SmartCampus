@@ -21,7 +21,9 @@ import com.example.smartcampus.dto.LocationDTO;
 import com.example.smartcampus.dto.CareerDTO;
 import com.example.smartcampus.dto.CategoryDTO;
 import com.example.smartcampus.entity.Event;
+import com.example.smartcampus.entity.EventRegistration;
 import com.example.smartcampus.entity.User;
+import com.example.smartcampus.repository.EventRegistrationRepository;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
 import com.example.smartcampus.repository.UserRepository;
@@ -35,6 +37,7 @@ import lombok.RequiredArgsConstructor;
 public class EventService {
 
     private final EventRepository eventRepository;
+    private final EventRegistrationRepository eventRegistrationRepository;
     private final LocationRepository locationRepository;
     private final UserRepository userRepository;
     private final CareerRepository careerRepository;
@@ -301,5 +304,40 @@ public class EventService {
         }
 
         return result.map(this::mapToDTO);
+    }
+
+    public void registerToEvent(Long eventId, User user) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        if (eventRegistrationRepository.existsByEventIdAndUserId(eventId, user.getId())) {
+            throw new RuntimeException("Ya estás inscrito en este evento");
+        }
+
+        Integer maxCapacity = event.getMaxCapacity();
+        if (maxCapacity != null) {
+            long registeredCount = eventRegistrationRepository.countByEventId(eventId);
+            if (registeredCount >= maxCapacity) {
+                throw new RuntimeException("Cupo lleno");
+            }
+        }
+
+        EventRegistration registration = EventRegistration.builder()
+                .eventId(eventId)
+                .userId(user.getId())
+                .build();
+
+        eventRegistrationRepository.save(registration);
+    }
+
+    public void unregisterFromEvent(Long eventId, User user) {
+        if (!eventRepository.existsById(eventId)) {
+            throw new RuntimeException("Evento no encontrado");
+        }
+
+        long deleted = eventRegistrationRepository.deleteByEventIdAndUserId(eventId, user.getId());
+        if (deleted == 0) {
+            throw new RuntimeException("No estabas inscrito en este evento");
+        }
     }
 }
