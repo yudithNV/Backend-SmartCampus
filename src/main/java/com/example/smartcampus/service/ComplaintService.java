@@ -12,9 +12,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,6 +59,39 @@ public class ComplaintService {
 
         Complaint saved = complaintRepository.save(complaint);
         return mapToDTO(saved);
+    }
+
+    public ComplaintResponseDTO addAttachments(Long complaintId,
+                                           List<MultipartFile> files,
+                                           User student) {
+
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new RuntimeException("Reclamo no encontrado"));
+
+        if (!complaint.getStudentId().equals(student.getId())) {
+            throw new SecurityException("No autorizado para modificar este reclamo");
+        }
+
+        List<String> urls = new ArrayList<>();
+
+        if (complaint.getEvidenceUrl() != null) {
+            for (String url : complaint.getEvidenceUrl().split(",")) {
+                urls.add(url);
+            }
+        }
+
+        for (MultipartFile file : files) {
+            try {
+                String url = supabaseStorageService.uploadFile(file, "complaints");
+                urls.add(url);
+            } catch (Exception e) {
+                throw new RuntimeException("Error al subir archivo: " + e.getMessage());
+            }
+        }
+
+        complaint.setEvidenceUrl(String.join(",", urls));
+
+        return mapToDTO(complaintRepository.save(complaint));
     }
 
     /**
