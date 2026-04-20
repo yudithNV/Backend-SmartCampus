@@ -46,6 +46,8 @@ public class SecurityConfig {
                 // Usuarios
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
 
                 // Carreras
                 .requestMatchers(HttpMethod.GET, "/api/careers").permitAll()
