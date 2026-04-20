@@ -46,9 +46,23 @@ public class News {
     @Column(name = "published")
     private Boolean published;
 
+
+     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "news_status", nullable = false)
+    @Builder.Default
+    private NewsStatus newsStatus = NewsStatus.PUBLICADO;
+ 
+
+    @Column(name = "scheduled_at")
+    private OffsetDateTime scheduledAt;
+
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
+
+    public void syncPublished() {
+        this.published = (this.newsStatus == NewsStatus.PUBLICADO);
+    }
 }
