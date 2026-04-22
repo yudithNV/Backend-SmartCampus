@@ -33,14 +33,14 @@ public interface NewsRepository extends JpaRepository<News, Long> {
     // ── Paginación con filtros ─────
     @Query(value = """
         SELECT * FROM news
-        WHERE news_status = 'PUBLICADO'
+        WHERE status = 'PUBLICADO'
           AND (:search   IS NULL OR LOWER(title) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:careerId IS NULL OR career_id = :careerId)
           AND (CAST(:category AS TEXT) IS NULL OR category::text = CAST(:category AS TEXT))
         """,
         countQuery = """
         SELECT COUNT(*) FROM news
-        WHERE news_status = 'PUBLICADO'
+        WHERE status = 'PUBLICADO'
           AND (:search   IS NULL OR LOWER(title) LIKE LOWER(CONCAT('%', :search, '%')))
           AND (:careerId IS NULL OR career_id = :careerId)
           AND (CAST(:category AS TEXT) IS NULL OR category::text = CAST(:category AS TEXT))

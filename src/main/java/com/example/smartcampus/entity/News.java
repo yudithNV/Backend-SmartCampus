@@ -47,8 +47,8 @@ public class News {
     private Boolean published;
 
 
-     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
-    @Column(name = "news_status", nullable = false)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status", nullable = false)
     @Builder.Default
     private NewsStatus newsStatus = NewsStatus.PUBLICADO;
  
