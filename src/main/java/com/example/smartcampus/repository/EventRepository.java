@@ -83,4 +83,56 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Búsqueda + categoría + carrera
     Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryIdAndCareerId(
             String name, Integer categoryId, Integer careerId, Pageable pageable);
+
+    // Eventos por rango de fechas (mes) - solo con startDatetime
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndFilters(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate
+    );
+
+    // Eventos por rango de fechas + carrera
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.careerId = :careerId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndCareer(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("careerId") Integer careerId
+    );
+
+    // Eventos por rango de fechas + categoría
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.categoryId = :categoryId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndCategory(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("categoryId") Integer categoryId
+    );
+
+    // Eventos por rango de fechas + carrera + categoría
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.careerId = :careerId " +
+           "AND e.categoryId = :categoryId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthCareerAndCategory(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("careerId") Integer careerId,
+            @Param("categoryId") Integer categoryId
+    );
 }

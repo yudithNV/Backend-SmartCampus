@@ -1,32 +1,19 @@
 package com.example.smartcampus.service;
 
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.example.smartcampus.dto.EventCreateDTO;
-import com.example.smartcampus.dto.EventResponseDTO;
-import com.example.smartcampus.dto.LocationDTO;
-import com.example.smartcampus.dto.CareerDTO;
-import com.example.smartcampus.dto.CategoryDTO;
+import com.example.smartcampus.dto.*;
 import com.example.smartcampus.entity.Event;
 import com.example.smartcampus.entity.User;
-import com.example.smartcampus.repository.EventRepository;
-import com.example.smartcampus.repository.LocationRepository;
-import com.example.smartcampus.repository.UserRepository;
-import com.example.smartcampus.repository.CareerRepository;
-import com.example.smartcampus.repository.CategoryRepository;
+import com.example.smartcampus.repository.*;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,35 +27,13 @@ public class EventService {
     private final CareerRepository careerRepository;
     private final CategoryRepository categoryRepository;
 
+    @Transactional
     public EventResponseDTO createEvent(EventCreateDTO dto, User user) {
         OffsetDateTime startDatetime = parseDatetime(dto.getStartDate(), dto.getStartTime());
         OffsetDateTime endDatetime = parseDatetime(dto.getEndDate(), dto.getEndTime());
 
-        // Validar conflicto de horario en la misma ubicación
-        Optional<Event> conflictingEvent = eventRepository.findConflictingEvent(
-                dto.getLocationId(),
-                startDatetime,
-                endDatetime,
-                0L // Para creación, no hay ID previo
-        );
-
-        if (conflictingEvent.isPresent()) {
-            Event conflict = conflictingEvent.get();
-            String locationName = locationRepository.findById(dto.getLocationId())
-                    .map(loc -> loc.getName())
-                    .orElse("Ubicación desconocida");
-
-            String startTime = formatTime(conflict.getStartDatetime());
-            String endTime = formatTime(conflict.getEndDatetime());
-
-            throw new RuntimeException(
-                    String.format("Error: Ya existe el evento \"%s\" en %s de %s a %s.",
-                            conflict.getName(),
-                            locationName,
-                            startTime,
-                            endTime)
-            );
-        }
+        // Validar conflicto de horario
+        validarConflicto(dto.getLocationId(), startDatetime, endDatetime, 0L);
 
         Event event = Event.builder()
                 .name(dto.getName())
@@ -80,18 +45,17 @@ public class EventService {
                 .maxCapacity(dto.getMaxCapacity())
                 .posterUrl(dto.getPosterUrl())
                 .careerId(dto.getCareerId())
-                .categoryId(dto.getCategoryId())
+                .categoryId(dto.getCategoryId() != null ? dto.getCategoryId() : null)
                 .authorId(user.getId())
                 .isActive(dto.getPublish() != null && dto.getPublish())
                 .build();
 
-        Event saved = eventRepository.save(event);
-        return mapToDTO(saved);
+        return mapToDTO(eventRepository.save(event));
     }
 
     public List<EventResponseDTO> getAllPublished() {
         return eventRepository.findAll().stream()
-                .filter(e -> e.getIsActive() != null && e.getIsActive())
+                .filter(e -> Boolean.TRUE.equals(e.getIsActive()))
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -120,186 +84,165 @@ public class EventService {
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
     }
 
+    @Transactional
     public EventResponseDTO updateEvent(Long id, EventCreateDTO dto, User user) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
 
-        // Validar que el usuario sea el autor del evento
         if (!event.getAuthorId().equals(user.getId())) {
             throw new RuntimeException("No tienes permiso para editar este evento");
         }
 
-        OffsetDateTime startDatetime = parseDatetime(dto.getStartDate(), dto.getStartTime());
-        OffsetDateTime endDatetime = parseDatetime(dto.getEndDate(), dto.getEndTime());
+        OffsetDateTime start = parseDatetime(dto.getStartDate(), dto.getStartTime());
+        OffsetDateTime end = parseDatetime(dto.getEndDate(), dto.getEndTime());
 
-        // Validar conflicto de horario en la misma ubicación
-        Optional<Event> conflictingEvent = eventRepository.findConflictingEvent(
-                dto.getLocationId(),
-                startDatetime,
-                endDatetime,
-                id // Para actualización, excluir el evento actual
-        );
-
-        if (conflictingEvent.isPresent()) {
-            Event conflict = conflictingEvent.get();
-            String locationName = locationRepository.findById(dto.getLocationId())
-                    .map(loc -> loc.getName())
-                    .orElse("Ubicación desconocida");
-
-            String startTime = formatTime(conflict.getStartDatetime());
-            String endTime = formatTime(conflict.getEndDatetime());
-
-            throw new RuntimeException(
-                    String.format("Error: Ya existe el evento \"%s\" en %s de %s a %s.",
-                            conflict.getName(),
-                            locationName,
-                            startTime,
-                            endTime)
-            );
-        }
+        validarConflicto(dto.getLocationId(), start, end, id);
 
         event.setName(dto.getName());
         event.setDescription(dto.getDescription());
         event.setEventType(dto.getEventType());
         event.setLocationId(dto.getLocationId());
-        event.setStartDatetime(startDatetime);
-        event.setEndDatetime(endDatetime);
+        event.setStartDatetime(start);
+        event.setEndDatetime(end);
         event.setMaxCapacity(dto.getMaxCapacity());
         event.setPosterUrl(dto.getPosterUrl());
         event.setCareerId(dto.getCareerId());
-        event.setCategoryId(dto.getCategoryId());
+        event.setCategoryId(dto.getCategoryId() != null ? dto.getCategoryId() : null);
         event.setIsActive(dto.getPublish() != null && dto.getPublish());
 
-        Event updated = eventRepository.save(event);
-        return mapToDTO(updated);
+        return mapToDTO(eventRepository.save(event));
+    }
+
+    @Transactional
+    public void deleteEvent(Long id, User user) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+        if (!event.getAuthorId().equals(user.getId())) {
+            throw new RuntimeException("No tienes permiso para eliminar este evento");
+        }
+        eventRepository.deleteById(id);
+    }
+
+    private void validarConflicto(Integer locId, OffsetDateTime start, OffsetDateTime end, Long eventId) {
+        Optional<Event> conflict = eventRepository.findConflictingEvent(locId, start, end, eventId);
+        if (conflict.isPresent()) {
+            throw new RuntimeException("Conflicto de horario en esta ubicación.");
+        }
     }
 
     private EventResponseDTO mapToDTO(Event event) {
         String authorName = userRepository.findById(event.getAuthorId())
-                .map(User::getFullName)
-                .orElse("Autor desconocido");
+                .map(User::getFullName).orElse("Anonimo");
 
-        LocationDTO locationDTO = null;
-        if (event.getLocationId() != null) {
-            locationDTO = locationRepository.findById(event.getLocationId())
-                    .map(loc -> new LocationDTO(loc.getId(), loc.getName(), loc.getBlock(), loc.getDescription()))
-                    .orElse(null);
-        }
+        LocationDTO locDTO = event.getLocationId() == null ? null :
+                locationRepository.findById(event.getLocationId())
+                        .map(l -> new LocationDTO(l.getId(), l.getName(), l.getBlock(), l.getDescription()))
+                        .orElse(null);
 
-        CareerDTO careerDTO = event.getCareerId() != null
-                ? careerRepository.findById(event.getCareerId())
-                    .map(career -> new CareerDTO(career.getId(), career.getName(), career.getCode()))
-                    .orElse(null)
-                : null;
+        CareerDTO careerDTO = event.getCareerId() == null ? null :
+                careerRepository.findById(event.getCareerId())
+                        .map(c -> new CareerDTO(c.getId(), c.getName(), c.getCode()))
+                        .orElse(null);
 
-        CategoryDTO categoryDTO = event.getCategoryId() != null
-                ? categoryRepository.findById(event.getCategoryId().longValue())
-                    .map(category -> new CategoryDTO(category.getId(), category.getName(), category.getColorHex()))
-                    .orElse(null)
-                : null;
+        CategoryDTO catDTO = event.getCategoryId() == null ? null :
+                categoryRepository.findById(event.getCategoryId().longValue())
+                        .map(c -> new CategoryDTO(c.getId(), c.getName(), c.getColorHex()))
+                        .orElse(null);
 
         return EventResponseDTO.builder()
                 .id(event.getId())
                 .name(event.getName())
                 .description(event.getDescription())
                 .eventType(event.getEventType())
-                .location(locationDTO)
+                .location(locDTO)
                 .startDatetime(event.getStartDatetime())
                 .endDatetime(event.getEndDatetime())
                 .maxCapacity(event.getMaxCapacity())
                 .posterUrl(event.getPosterUrl())
                 .career(careerDTO)
+                .category(catDTO)
                 .authorId(event.getAuthorId())
                 .authorName(authorName)
                 .isActive(event.getIsActive())
-                .category(categoryDTO)
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
                 .build();
     }
 
-    /**
-     * Formatea OffsetDateTime a formato HH:mm
-     */
-    private String formatTime(OffsetDateTime datetime) {
-        if (datetime == null) return "N/A";
-        return datetime.format(DateTimeFormatter.ofPattern("HH:mm"));
-    }
-
-    /**
-     * Combina una fecha y hora en formato string a OffsetDateTime
-     * @param dateStr Formato: "YYYY-MM-DD"
-     * @param timeStr Formato: "HH:mm"
-     * @return OffsetDateTime en UTC, o null si alguno es null
-     */
     private OffsetDateTime parseDatetime(String dateStr, String timeStr) {
-        if (dateStr == null || timeStr == null) {
-            return null;
-        }
+        if (dateStr == null || timeStr == null) return null;
         try {
-            LocalDate date = LocalDate.parse(dateStr);
-            LocalTime time = LocalTime.parse(timeStr);
-            return date.atTime(time).atOffset(ZoneOffset.UTC);
+            return LocalDateTime.of(LocalDate.parse(dateStr), LocalTime.parse(timeStr))
+                    .atOffset(ZoneOffset.UTC);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Formato de fecha o hora inválido. Usa YYYY-MM-DD y HH:mm");
+            throw new IllegalArgumentException("Formato inválido: use YYYY-MM-DD y HH:mm");
         }
     }
 
-    public void deleteEvent(Long id, User user) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
-
-        // Validar que el usuario sea el autor del evento antes de borrar
-        if (!event.getAuthorId().equals(user.getId())) {
-            throw new RuntimeException("No tienes permiso para eliminar este evento");
-        }
-
-        eventRepository.deleteById(id);
+    private String formatTime(OffsetDateTime dt) {
+        return dt == null ? "N/A" : dt.format(DateTimeFormatter.ofPattern("HH:mm"));
     }
 
-    public Page<EventResponseDTO> getRecentEvents(String search, Integer categoryId, Integer careerId, int page, int size, String sortBy, String sortType) {
-        // ✅ Validar que sortBy sea un campo válido para evitar SQL injection
-        List<String> allowedSortFields = List.of("createdAt", "startDatetime", "endDatetime", "name", "maxCapacity");
-        String safeSortBy = allowedSortFields.contains(sortBy) ? sortBy : "createdAt";
-
-        // ✅ Construir el Sort (ASC o DESC)
-        Sort sort = sortType != null && sortType.equalsIgnoreCase("ASC")
-                ? Sort.by(safeSortBy).ascending()
-                : Sort.by(safeSortBy).descending();
-
-        // ✅ Crear el Pageable con paginación + ordenación
-        Pageable pageable = PageRequest.of(page, size, sort);
+    public Page<EventResponseDTO> getRecentEvents(String search, Integer catId, Integer carId, int page, int size, String sort, String type) {
+        List<String> allowedFields = List.of("createdAt", "startDatetime", "endDatetime", "name", "maxCapacity");
+        String safeSortBy = allowedFields.contains(sort) ? sort : "createdAt";
+        Sort sorting = type != null && type.equalsIgnoreCase("ASC") ? Sort.by(safeSortBy).ascending() : Sort.by(safeSortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sorting);
         
-        Page<Event> result;
-
         boolean hasSearch = search != null && !search.isBlank();
-        boolean hasCategory = categoryId != null;
-        boolean hasCareer = careerId != null;
+        boolean hasCategory = catId != null;
+        boolean hasCareer = carId != null;
 
-        // Filtrado dinámico según los parámetros presentes
+        Page<Event> result;
         if (hasSearch && hasCategory && hasCareer) {
-            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryIdAndCareerId(
-                search, categoryId, careerId, pageable);
+            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryIdAndCareerId(search, catId, carId, pageable);
         } else if (hasSearch && hasCategory) {
-            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryId(
-                search, categoryId, pageable);
+            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryId(search, catId, pageable);
         } else if (hasSearch && hasCareer) {
-            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCareerId(
-                search, careerId, pageable);
+            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCaseAndCareerId(search, carId, pageable);
         } else if (hasCategory && hasCareer) {
-            result = eventRepository.findByIsActiveTrueAndCategoryIdAndCareerId(
-                categoryId, careerId, pageable);
+            result = eventRepository.findByIsActiveTrueAndCategoryIdAndCareerId(catId, carId, pageable);
         } else if (hasSearch) {
-            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCase(
-                search, pageable);
+            result = eventRepository.findByIsActiveTrueAndNameContainingIgnoreCase(search, pageable);
         } else if (hasCategory) {
-            result = eventRepository.findByIsActiveTrueAndCategoryId(categoryId, pageable);
+            result = eventRepository.findByIsActiveTrueAndCategoryId(catId, pageable);
         } else if (hasCareer) {
-            result = eventRepository.findByIsActiveTrueAndCareerId(careerId, pageable);
+            result = eventRepository.findByIsActiveTrueAndCareerId(carId, pageable);
         } else {
             result = eventRepository.findAllByIsActiveTrue(pageable);
         }
-
+        
         return result.map(this::mapToDTO);
+    }
+
+    public List<EventResponseDTO> getEventsByMonthAndFilters(Integer year, Integer month, Integer carId, Integer catId) {
+        if (year == null || month == null) {
+            throw new IllegalArgumentException("year y month son parámetros requeridos");
+        }
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException("month debe estar entre 1 y 12");
+        }
+
+        YearMonth ym = YearMonth.of(year, month);
+        OffsetDateTime start = ym.atDay(1).atTime(0, 0, 0).atOffset(ZoneOffset.UTC);
+        OffsetDateTime end = ym.atEndOfMonth().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        
+        List<Event> events;
+        boolean hasCareer = carId != null;
+        boolean hasCategory = catId != null;
+
+        if (hasCareer && hasCategory) {
+            events = eventRepository.findByMonthCareerAndCategory(start, end, carId, catId);
+        } else if (hasCareer) {
+            events = eventRepository.findByMonthAndCareer(start, end, carId);
+        } else if (hasCategory) {
+            events = eventRepository.findByMonthAndCategory(start, end, catId);
+        } else {
+            events = eventRepository.findByMonthAndFilters(start, end);
+        }
+        
+        return events.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 }
