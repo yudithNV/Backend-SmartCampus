@@ -12,7 +12,7 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
 
     long countByEventId(Long eventId);
 
-    boolean existsByEventIdAndUserId(Long eventId, UUID userId);
+    boolean existsByEventIdAndStudentId(Long eventId, UUID studentId);
 
-    long deleteByEventIdAndUserId(Long eventId, UUID userId);
+    long deleteByEventIdAndStudentId(Long eventId, UUID studentId);
 }

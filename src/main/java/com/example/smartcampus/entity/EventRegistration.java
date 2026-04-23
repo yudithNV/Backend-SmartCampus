@@ -35,18 +35,18 @@ public class EventRegistration {
     @Column(name = "event_id", nullable = false)
     private Long eventId;
 
-    @Column(name = "user_id", nullable = false)
-    private UUID userId;
+    @Column(name = "student_id", nullable = false)
+    private UUID studentId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "event_id", insertable = false, updatable = false)
     private Event event;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", insertable = false, updatable = false)
+    @JoinColumn(name = "student_id", insertable = false, updatable = false)
     private User user;
 
-    @Column(name = "created_at")
+    @Column(name = "registered_at")
     private OffsetDateTime createdAt;
 
     @PrePersist

@@ -14,21 +14,22 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.smartcampus.dto.CareerDTO;
+import com.example.smartcampus.dto.CategoryDTO;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
 import com.example.smartcampus.dto.LocationDTO;
-import com.example.smartcampus.dto.CareerDTO;
-import com.example.smartcampus.dto.CategoryDTO;
 import com.example.smartcampus.entity.Event;
 import com.example.smartcampus.entity.EventRegistration;
 import com.example.smartcampus.entity.User;
+import com.example.smartcampus.repository.CareerRepository;
+import com.example.smartcampus.repository.CategoryRepository;
 import com.example.smartcampus.repository.EventRegistrationRepository;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
 import com.example.smartcampus.repository.UserRepository;
-import com.example.smartcampus.repository.CareerRepository;
-import com.example.smartcampus.repository.CategoryRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -123,6 +124,7 @@ public class EventService {
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
     }
 
+    @Transactional
     public EventResponseDTO updateEvent(Long id, EventCreateDTO dto, User user) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
@@ -310,7 +312,7 @@ public class EventService {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
 
-        if (eventRegistrationRepository.existsByEventIdAndUserId(eventId, user.getId())) {
+        if (eventRegistrationRepository.existsByEventIdAndStudentId(eventId, user.getId())) {
             throw new RuntimeException("Ya estás inscrito en este evento");
         }
 
@@ -324,18 +326,19 @@ public class EventService {
 
         EventRegistration registration = EventRegistration.builder()
                 .eventId(eventId)
-                .userId(user.getId())
+                .studentId(user.getId())
                 .build();
 
         eventRegistrationRepository.save(registration);
     }
 
+    @Transactional
     public void unregisterFromEvent(Long eventId, User user) {
         if (!eventRepository.existsById(eventId)) {
             throw new RuntimeException("Evento no encontrado");
         }
 
-        long deleted = eventRegistrationRepository.deleteByEventIdAndUserId(eventId, user.getId());
+        long deleted = eventRegistrationRepository.deleteByEventIdAndStudentId(eventId, user.getId());
         if (deleted == 0) {
             throw new RuntimeException("No estabas inscrito en este evento");
         }
