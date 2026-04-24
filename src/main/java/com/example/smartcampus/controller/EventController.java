@@ -69,9 +69,10 @@ public class EventController {
     public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getCalendar(
             @RequestParam(required = true) Integer year,
             @RequestParam(required = true) Integer month,
+            @RequestParam(required = false) Integer day,
             @RequestParam(required = false) Integer careerId,
             @RequestParam(required = false) Integer categoryId) {
-        List<EventResponseDTO> result = eventService.getEventsByMonthAndFilters(year, month, careerId, categoryId);
+        List<EventResponseDTO> result = eventService.getEventsByMonthAndFilters(year, month, day, careerId, categoryId);
         return ResponseEntity.ok(ApiResponse.ok("Eventos del calendario obtenidos correctamente", result));
     }
 
@@ -91,6 +92,13 @@ public class EventController {
     public ResponseEntity<ApiResponse<EventResponseDTO>> getById(@PathVariable Long id) {
         EventResponseDTO result = eventService.getEventById(id);
         return ResponseEntity.ok(ApiResponse.ok("Evento obtenido correctamente", result));
+    }
+
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getEventsByStudent(
+            @PathVariable java.util.UUID studentId) {
+        List<EventResponseDTO> result = eventService.getEventsByStudentCareer(studentId);
+        return ResponseEntity.ok(ApiResponse.ok("Eventos del estudiante obtenidos correctamente", result));
     }
 
     @PutMapping("/{id}")

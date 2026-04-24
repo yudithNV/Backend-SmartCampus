@@ -215,7 +215,7 @@ public class EventService {
         return result.map(this::mapToDTO);
     }
 
-    public List<EventResponseDTO> getEventsByMonthAndFilters(Integer year, Integer month, Integer carId, Integer catId) {
+    public List<EventResponseDTO> getEventsByMonthAndFilters(Integer year, Integer month, Integer day, Integer carId, Integer catId) {
         if (year == null || month == null) {
             throw new IllegalArgumentException("year y month son parámetros requeridos");
         }
@@ -223,9 +223,24 @@ public class EventService {
             throw new IllegalArgumentException("month debe estar entre 1 y 12");
         }
 
-        YearMonth ym = YearMonth.of(year, month);
-        OffsetDateTime start = ym.atDay(1).atTime(0, 0, 0).atOffset(ZoneOffset.UTC);
-        OffsetDateTime end = ym.atEndOfMonth().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        OffsetDateTime start;
+        OffsetDateTime end;
+        
+        if (day != null) {
+            // Si se proporciona día, filtrar solo ese día
+            if (day < 1 || day > 31) {
+                throw new IllegalArgumentException("day debe estar entre 1 y 31");
+            }
+            YearMonth ym = YearMonth.of(year, month);
+            LocalDate date = ym.atDay(Math.min(day, ym.lengthOfMonth()));
+            start = date.atTime(0, 0, 0).atOffset(ZoneOffset.UTC);
+            end = date.atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        } else {
+            // Si no se proporciona día, filtrar todo el mes
+            YearMonth ym = YearMonth.of(year, month);
+            start = ym.atDay(1).atTime(0, 0, 0).atOffset(ZoneOffset.UTC);
+            end = ym.atEndOfMonth().atTime(23, 59, 59).atOffset(ZoneOffset.UTC);
+        }
         
         List<Event> events;
         boolean hasCareer = carId != null;
@@ -242,6 +257,20 @@ public class EventService {
         }
         
         return events.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<EventResponseDTO> getEventsByStudentCareer(java.util.UUID studentId) {
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        
+        if (student.getCareerId() == null) {
+            throw new RuntimeException("El estudiante no tiene carrera asignada");
+        }
+        
+        return eventRepository.findByCareerIdOrderByStartDatetimeAsc(student.getCareerId()).stream()
+                .filter(e -> Boolean.TRUE.equals(e.getIsActive()))
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
