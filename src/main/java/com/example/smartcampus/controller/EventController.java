@@ -3,12 +3,14 @@ package com.example.smartcampus.controller;
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
+import com.example.smartcampus.entity.Role;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.service.EventService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -31,9 +33,27 @@ public class EventController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getAll() {
-        List<EventResponseDTO> result = eventService.getAllPublished();
-        return ResponseEntity.ok(ApiResponse.ok("Eventos obtenidos correctamente", result));
+    public ResponseEntity<Page<EventResponseDTO>> listEvents(
+            @RequestParam(defaultValue = "0")    int page,
+            @RequestParam(defaultValue = "10")   int size,
+            @RequestParam(defaultValue = "startDatetime") String sortBy,
+            @RequestParam(required = false) String eventType,
+            @RequestParam(required = false) Integer careerId,
+            @AuthenticationPrincipal User user) {
+
+        Page<EventResponseDTO> result = eventService.listEvents(page, size, sortBy, eventType, careerId);
+
+        // SCRUM-145 / SCRUM-403: si es ESTUDIANTE, reordenar según preferencias
+        if (user != null && user.getRole() == Role.ESTUDIANTE) {
+            List<EventResponseDTO> sorted =
+                eventService.applyPreferencesOrder(result.getContent(), user.getId());
+
+            return ResponseEntity.ok(
+                new PageImpl<>(sorted, result.getPageable(), result.getTotalElements())
+            );
+        }
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/upcoming")

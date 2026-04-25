@@ -28,6 +28,13 @@ public class EventResponseDTO {
     private String authorName;
     private Boolean isActive;
     private CategoryDTO category;
+
+   
+    private Integer categoryId;
+
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+
+    
+    private Boolean recommended;
 }

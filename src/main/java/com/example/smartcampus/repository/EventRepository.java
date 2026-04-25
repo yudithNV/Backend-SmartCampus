@@ -35,7 +35,7 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Event e " +
            "WHERE e.locationId = :locationId " +
            "AND e.id != :eventId " +
-           "AND ((e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime))")
+           "AND (e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime)")
     boolean existsConflictingEvent(
             @Param("locationId") Integer locationId,
             @Param("startDatetime") OffsetDateTime startDatetime,
@@ -47,7 +47,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("SELECT e FROM Event e " +
            "WHERE e.locationId = :locationId " +
            "AND e.id != :eventId " +
-           "AND ((e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime)) " +
+           "AND (e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime) " +
+           "ORDER BY e.startDatetime ASC " +
            "LIMIT 1")
     Optional<Event> findConflictingEvent(
             @Param("locationId") Integer locationId,
@@ -83,4 +84,15 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Búsqueda + categoría + carrera
     Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryIdAndCareerId(
             String name, Integer categoryId, Integer careerId, Pageable pageable);
+
+    
+    @Query("SELECT e FROM Event e WHERE e.isActive = true AND CAST(e.eventType AS string) = :eventType")
+    Page<Event> findByIsActiveTrueAndEventType(
+            @Param("eventType") String eventType, Pageable pageable);
+
+    @Query("SELECT e FROM Event e WHERE e.isActive = true AND CAST(e.eventType AS string) = :eventType AND e.careerId = :careerId")
+    Page<Event> findByIsActiveTrueAndEventTypeAndCareerId(
+            @Param("eventType") String eventType,
+            @Param("careerId") Integer careerId,
+            Pageable pageable);
 }
