@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.UserCreateDTO;
 import com.example.smartcampus.dto.UserListDTO;
+import com.example.smartcampus.dto.UserUpdateDTO;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.service.UserService;
 
@@ -49,6 +51,20 @@ public class UserController {
         return ResponseEntity.ok(
             userService.listAllUsers(search, career, role, status, page, size, sortBy, sortType)
         );
+    }
+
+    // ─── PUT /api/users/{id} — solo ADMINISTRADOR ─────────────────────────────
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<UserListDTO>> updateUser(
+            @PathVariable UUID id,
+            @RequestBody UserUpdateDTO dto) {
+        try {
+            UserListDTO updated = userService.updateUser(id, dto);
+            return ResponseEntity.ok(ApiResponse.ok("Datos actualizados correctamente", updated));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.ok(e.getMessage(), null));
+        }
     }
 
     // ─── DELETE /api/users/{id} — solo ADMINISTRADOR ──────────────────────────

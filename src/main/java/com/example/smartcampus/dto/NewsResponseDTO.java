@@ -1,6 +1,8 @@
 package com.example.smartcampus.dto;
 
 import com.example.smartcampus.entity.NewsCategory;
+import com.example.smartcampus.entity.NewsStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import java.time.OffsetDateTime;
@@ -20,6 +22,8 @@ public class NewsResponseDTO {
     private UUID authorId;
     private String authorName; 
     private Boolean published;
+    private NewsStatus newsStatus;
+    private OffsetDateTime scheduledAt;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 }
