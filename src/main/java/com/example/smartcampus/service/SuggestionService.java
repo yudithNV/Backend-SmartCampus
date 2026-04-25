@@ -49,7 +49,7 @@ public class SuggestionService {
         return new SuggestionResponseDTO(
                 s.getId(),
                 s.getStudentId(),
-                s.getCategory().name(),
+                s.getCategory() != null ? s.getCategory().name() : "OTRO",
                 s.getBody(),
                 s.getCreatedAt()
         );
