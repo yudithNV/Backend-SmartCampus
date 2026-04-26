@@ -124,6 +124,12 @@ public class EventService {
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
     }
 
+    public EventResponseDTO getEventById(Long id, User user) {
+        return eventRepository.findById(id)
+                .map(event -> mapToDTO(event, user.getId()))
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+    }
+
     @Transactional
     public EventResponseDTO updateEvent(Long id, EventCreateDTO dto, User user) {
         Event event = eventRepository.findById(id)
@@ -180,6 +186,10 @@ public class EventService {
     }
 
     private EventResponseDTO mapToDTO(Event event) {
+        return mapToDTO(event, null);
+    }
+
+    private EventResponseDTO mapToDTO(Event event, java.util.UUID studentId) {
         String authorName = userRepository.findById(event.getAuthorId())
                 .map(User::getFullName)
                 .orElse("Autor desconocido");
@@ -203,6 +213,11 @@ public class EventService {
                     .orElse(null)
                 : null;
 
+        long registeredCount = eventRegistrationRepository.countByEventId(event.getId());
+        Boolean isRegistered = studentId != null 
+                ? eventRegistrationRepository.existsByEventIdAndStudentId(event.getId(), studentId)
+                : null;
+
         return EventResponseDTO.builder()
                 .id(event.getId())
                 .name(event.getName())
@@ -220,6 +235,8 @@ public class EventService {
                 .category(categoryDTO)
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
+                .registeredCount(registeredCount)
+                .isRegistered(isRegistered)
                 .build();
     }
 
@@ -260,6 +277,44 @@ public class EventService {
         }
 
         eventRepository.deleteById(id);
+    }
+
+    @Transactional
+    public EventResponseDTO registerStudent(Long eventId, User student) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        // Verificar si ya está registrado
+        if (eventRegistrationRepository.existsByEventIdAndStudentId(eventId, student.getId())) {
+            throw new RuntimeException("Ya estás inscrito en este evento");
+        }
+
+        // Verificar capacidad
+        long registeredCount = eventRegistrationRepository.countByEventId(eventId);
+        if (event.getMaxCapacity() != null && registeredCount >= event.getMaxCapacity()) {
+            throw new RuntimeException("El evento ha alcanzado su capacidad máxima");
+        }
+
+        EventRegistration registration = EventRegistration.builder()
+                .eventId(eventId)
+                .studentId(student.getId())
+                .build();
+
+        eventRegistrationRepository.save(registration);
+        return mapToDTO(event, student.getId());
+    }
+
+    @Transactional
+    public EventResponseDTO unregisterStudent(Long eventId, User student) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        long deleted = eventRegistrationRepository.deleteByEventIdAndStudentId(eventId, student.getId());
+        if (deleted == 0) {
+            throw new RuntimeException("No estabas inscrito en este evento");
+        }
+
+        return mapToDTO(event, student.getId());
     }
 
     public Page<EventResponseDTO> getRecentEvents(String search, Integer categoryId, Integer careerId, int page, int size, String sortBy, String sortType) {

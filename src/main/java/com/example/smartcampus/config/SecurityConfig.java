@@ -72,11 +72,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
                 // Inscripción/cancelación de eventos (usuarios autenticados)
                 .requestMatchers(HttpMethod.POST, "/api/events/*/register").authenticated()
-                .requestMatchers(HttpMethod.DELETE, "/api/events/*/unregister").authenticated()
-                // Eventos — escritura solo PUBLICADOR
+                .requestMatchers(HttpMethod.DELETE, "/api/events/*/register").authenticated()
+                // Eventos — escritura solo PUBLICADOR (POST en raíz, PUT y DELETE en específicos)
                 .requestMatchers(HttpMethod.POST,   "/api/events").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.PUT,    "/api/events/**").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.PUT,    "/api/events/*").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/events/*").hasRole("PUBLICADOR")
 
                 // Reclamos
                 .requestMatchers("/api/complaints/**").authenticated()

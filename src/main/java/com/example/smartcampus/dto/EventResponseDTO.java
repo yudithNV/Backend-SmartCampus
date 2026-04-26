@@ -30,4 +30,6 @@ public class EventResponseDTO {
     private CategoryDTO category;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private Long registeredCount;
+    private Boolean isRegistered;
 }
