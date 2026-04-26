@@ -1,8 +1,11 @@
 package com.example.smartcampus.dto;
 
 import com.example.smartcampus.entity.EventType;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,10 +38,66 @@ public class EventCreateDTO {
     private String endTime;    // ej: "18:00"
 
     private Integer maxCapacity;
+    
+    @Size(max = 500, message = "La URL del póster no puede exceder 500 caracteres")
+    @Pattern(regexp = "(^https://.*)?$", message = "La URL del póster debe ser HTTPS")
     private String posterUrl;
+    
     private Integer careerId;
     private Integer categoryId;
 
     // true = publicado, false = borrador
     private Boolean publish = true;
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public EventType getEventType() {
+        return eventType;
+    }
+
+    public Integer getLocationId() {
+        return locationId;
+    }
+
+    public String getStartDate() {
+        return startDate;
+    }
+
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public String getEndDate() {
+        return endDate;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public Integer getMaxCapacity() {
+        return maxCapacity;
+    }
+
+    public String getPosterUrl() {
+        return posterUrl;
+    }
+
+    public Integer getCareerId() {
+        return careerId;
+    }
+
+    public Integer getCategoryId() {
+        return categoryId;
+    }
+
+    public Boolean getPublish() {
+        return publish;
+    }
 }

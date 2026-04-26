@@ -2,7 +2,6 @@ package com.example.smartcampus.converter;
 
 import com.example.smartcampus.entity.EventType;
 
-
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 

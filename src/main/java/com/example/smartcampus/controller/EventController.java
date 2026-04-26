@@ -77,8 +77,12 @@ public class EventController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<EventResponseDTO>> getById(@PathVariable Long id) {
-        EventResponseDTO result = eventService.getEventById(id);
+    public ResponseEntity<ApiResponse<EventResponseDTO>> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        EventResponseDTO result = user != null 
+            ? eventService.getEventById(id, user)
+            : eventService.getEventById(id);
         return ResponseEntity.ok(ApiResponse.ok("Evento obtenido correctamente", result));
     }
 
@@ -92,10 +96,26 @@ public class EventController {
     }
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @AuthenticationPrincipal User user) {
         eventService.deleteEvent(id, user);
         return ResponseEntity.ok(ApiResponse.ok("Evento eliminado exitosamente", null));
+    }
+
+    @PostMapping("/{id}/register")
+    public ResponseEntity<ApiResponse<EventResponseDTO>> registerToEvent(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        EventResponseDTO result = eventService.registerStudent(id, user);
+        return ResponseEntity.ok(ApiResponse.ok("Inscripción realizada con éxito", result));
+    }
+
+    @DeleteMapping("/{id}/register")
+    public ResponseEntity<ApiResponse<EventResponseDTO>> unregisterFromEvent(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        EventResponseDTO result = eventService.unregisterStudent(id, user);
+        return ResponseEntity.ok(ApiResponse.ok("Inscripción cancelada con éxito", result));
     }
 
     @GetMapping("/recent")

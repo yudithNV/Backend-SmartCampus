@@ -7,7 +7,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -16,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.smartcampus.dto.CareerDTO;
 import com.example.smartcampus.dto.CategoryDTO;
@@ -24,9 +24,11 @@ import com.example.smartcampus.dto.EventResponseDTO;
 import com.example.smartcampus.dto.LocationDTO;
 import com.example.smartcampus.dto.UserPreferencesDTO;
 import com.example.smartcampus.entity.Event;
+import com.example.smartcampus.entity.EventRegistration;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.CareerRepository;
 import com.example.smartcampus.repository.CategoryRepository;
+import com.example.smartcampus.repository.EventRegistrationRepository;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
 import com.example.smartcampus.repository.UserRepository;
@@ -38,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 public class EventService {
 
     private final EventRepository eventRepository;
+    private final EventRegistrationRepository eventRegistrationRepository;
     private final LocationRepository locationRepository;
     private final UserRepository userRepository;
     private final CareerRepository careerRepository;
@@ -109,8 +112,15 @@ public class EventService {
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
     }
 
+    public EventResponseDTO getEventById(Long id, User user) {
+        return eventRepository.findById(id)
+                .map(event -> mapToDTO(event, user.getId()))
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+    }
+
     // ─── UPDATE ───────────────────────────────────────────────────────────────
 
+    @Transactional
     public EventResponseDTO updateEvent(Long id, EventCreateDTO dto, User user) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
@@ -286,6 +296,10 @@ public class EventService {
     }
 
     private EventResponseDTO mapToDTO(Event event) {
+        return mapToDTO(event, null);
+    }
+
+    private EventResponseDTO mapToDTO(Event event, java.util.UUID studentId) {
         String authorName = userRepository.findById(event.getAuthorId())
                 .map(User::getFullName)
                 .orElse("Autor desconocido");
@@ -310,6 +324,11 @@ public class EventService {
                     .orElse(null)
                 : null;
 
+        long registeredCount = eventRegistrationRepository.countByEventId(event.getId());
+        Boolean isRegistered = studentId != null 
+                ? eventRegistrationRepository.existsByEventIdAndStudentId(event.getId(), studentId)
+                : null;
+
         return EventResponseDTO.builder()
                 .id(event.getId())
                 .name(event.getName())
@@ -329,6 +348,8 @@ public class EventService {
                 .categoryId(event.getCategoryId())
                 .createdAt(event.getCreatedAt())
                 .updatedAt(event.getUpdatedAt())
+                .registeredCount(registeredCount)
+                .isRegistered(isRegistered)
                 // recommended se establece luego en applyPreferencesOrder
                 .build();
     }
@@ -356,5 +377,41 @@ public class EventService {
         return (sortType != null && sortType.equalsIgnoreCase("ASC"))
                 ? Sort.by(safe).ascending()
                 : Sort.by(safe).descending();
+    }
+
+    @Transactional
+    public EventResponseDTO registerStudent(Long eventId, User student) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        if (eventRegistrationRepository.existsByEventIdAndStudentId(eventId, student.getId())) {
+            throw new RuntimeException("Ya estás inscrito en este evento");
+        }
+
+        long registeredCount = eventRegistrationRepository.countByEventId(eventId);
+        if (event.getMaxCapacity() != null && registeredCount >= event.getMaxCapacity()) {
+            throw new RuntimeException("El evento ha alcanzado su capacidad máxima");
+        }
+
+        EventRegistration registration = EventRegistration.builder()
+                .eventId(eventId)
+                .studentId(student.getId())
+                .build();
+
+        eventRegistrationRepository.save(registration);
+        return mapToDTO(event, student.getId());
+    }
+
+    @Transactional
+    public EventResponseDTO unregisterStudent(Long eventId, User student) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        long deleted = eventRegistrationRepository.deleteByEventIdAndStudentId(eventId, student.getId());
+        if (deleted == 0) {
+            throw new RuntimeException("No estabas inscrito en este evento");
+        }
+
+        return mapToDTO(event, student.getId());
     }
 }

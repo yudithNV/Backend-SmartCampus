@@ -34,7 +34,7 @@ public class EventResponseDTO {
 
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
-
-    
     private Boolean recommended;
+    private Long registeredCount;
+    private Boolean isRegistered;
 }
