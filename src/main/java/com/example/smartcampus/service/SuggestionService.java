@@ -44,6 +44,13 @@ public class SuggestionService {
                 .collect(Collectors.toList());
     }
 
+    // ─── Eliminar sugerencia — solo el dueño puede eliminarla ─────────────────
+    public void delete(Long id, User user) {
+        Suggestion suggestion = repository.findByIdAndStudentId(id, user.getId())
+                .orElseThrow(() -> new RuntimeException("Sugerencia no encontrada o no tienes permiso para eliminarla"));
+        repository.delete(suggestion);
+    }
+
     // ─── Mapper ───────────────────────────────────────────────────────────────
     private SuggestionResponseDTO mapToDTO(Suggestion s) {
         return new SuggestionResponseDTO(
