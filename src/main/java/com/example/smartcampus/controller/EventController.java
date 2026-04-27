@@ -1,5 +1,20 @@
 package com.example.smartcampus.controller;
 
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
@@ -9,13 +24,7 @@ import com.example.smartcampus.service.EventService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/events")
@@ -76,30 +85,22 @@ public class EventController {
         return ResponseEntity.ok(ApiResponse.ok("Eventos por carrera obtenidos", result));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<EventResponseDTO>> getById(
-            @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
-        EventResponseDTO result = user != null 
-            ? eventService.getEventById(id, user)
-            : eventService.getEventById(id);
-        return ResponseEntity.ok(ApiResponse.ok("Evento obtenido correctamente", result));
+    @GetMapping("/calendar")
+    public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getCalendar(
+            @RequestParam(required = true) Integer year,
+            @RequestParam(required = true) Integer month,
+            @RequestParam(required = false) Integer day,
+            @RequestParam(required = false) Integer careerId,
+            @RequestParam(required = false) Integer categoryId) {
+        List<EventResponseDTO> result = eventService.getEventsByMonthAndFilters(year, month, day, careerId, categoryId);
+        return ResponseEntity.ok(ApiResponse.ok("Eventos del calendario obtenidos correctamente", result));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<EventResponseDTO>> update(
-            @PathVariable Long id,
-            @RequestBody EventCreateDTO dto,
+    @GetMapping("/registered")
+    public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getRegisteredEvents(
             @AuthenticationPrincipal User user) {
-        EventResponseDTO result = eventService.updateEvent(id, dto, user);
-        return ResponseEntity.ok(ApiResponse.ok("Evento actualizado exitosamente", result));
-    }
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable Long id,
-            @AuthenticationPrincipal User user) {
-        eventService.deleteEvent(id, user);
-        return ResponseEntity.ok(ApiResponse.ok("Evento eliminado exitosamente", null));
+        List<EventResponseDTO> result = eventService.getRegisteredEvents(user.getId());
+        return ResponseEntity.ok(ApiResponse.ok("Eventos registrados obtenidos correctamente", result));
     }
 
     @PostMapping("/{id}/register")
@@ -128,5 +129,39 @@ public class EventController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortType) {
         return ResponseEntity.ok(eventService.getRecentEvents(search, categoryId, careerId, page, size, sortBy, sortType));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<EventResponseDTO>> getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        EventResponseDTO result = user != null 
+            ? eventService.getEventById(id, user)
+            : eventService.getEventById(id);
+        return ResponseEntity.ok(ApiResponse.ok("Evento obtenido correctamente", result));
+    }
+
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getEventsByStudent(
+            @PathVariable java.util.UUID studentId) {
+        List<EventResponseDTO> result = eventService.getEventsByStudentCareer(studentId);
+        return ResponseEntity.ok(ApiResponse.ok("Eventos del estudiante obtenidos correctamente", result));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<EventResponseDTO>> update(
+            @PathVariable Long id,
+            @RequestBody EventCreateDTO dto,
+            @AuthenticationPrincipal User user) {
+        EventResponseDTO result = eventService.updateEvent(id, dto, user);
+        return ResponseEntity.ok(ApiResponse.ok("Evento actualizado exitosamente", result));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        eventService.deleteEvent(id, user);
+        return ResponseEntity.ok(ApiResponse.ok("Evento eliminado exitosamente", null));
     }
 }

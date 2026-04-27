@@ -47,12 +47,12 @@ public class EventRegistration {
     private User user;
 
     @Column(name = "registered_at")
-    private OffsetDateTime createdAt;
+    private OffsetDateTime registeredAt;
 
     @PrePersist
     protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = OffsetDateTime.now();
+        if (registeredAt == null) {
+            registeredAt = OffsetDateTime.now();
         }
     }
 }

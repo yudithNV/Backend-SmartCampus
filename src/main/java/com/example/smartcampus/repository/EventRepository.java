@@ -1,6 +1,10 @@
 package com.example.smartcampus.repository;
 
-import com.example.smartcampus.entity.Event;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,10 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import com.example.smartcampus.entity.Event;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
@@ -85,7 +86,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryIdAndCareerId(
             String name, Integer categoryId, Integer careerId, Pageable pageable);
 
-    
     @Query("SELECT e FROM Event e WHERE e.isActive = true AND CAST(e.eventType AS string) = :eventType")
     Page<Event> findByIsActiveTrueAndEventType(
             @Param("eventType") String eventType, Pageable pageable);
@@ -95,4 +95,56 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("eventType") String eventType,
             @Param("careerId") Integer careerId,
             Pageable pageable);
+
+    // Eventos por rango de fechas (mes) - solo con startDatetime
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndFilters(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate
+    );
+
+    // Eventos por rango de fechas + carrera
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.careerId = :careerId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndCareer(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("careerId") Integer careerId
+    );
+
+    // Eventos por rango de fechas + categoría
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.categoryId = :categoryId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndCategory(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("categoryId") Integer categoryId
+    );
+
+    // Eventos por rango de fechas + carrera + categoría
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.careerId = :careerId " +
+           "AND e.categoryId = :categoryId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthCareerAndCategory(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("careerId") Integer careerId,
+            @Param("categoryId") Integer categoryId
+    );
 }

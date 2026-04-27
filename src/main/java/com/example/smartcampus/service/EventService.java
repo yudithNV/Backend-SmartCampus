@@ -7,6 +7,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -413,5 +414,63 @@ public class EventService {
         }
 
         return mapToDTO(event, student.getId());
+    }
+
+    // ─── MÉTODOS PARA CALENDARIO Y REGISTROS POR FECHA ──────────────────────
+
+    public List<EventResponseDTO> getEventsByMonthAndFilters(
+            Integer year, Integer month, Integer day, Integer careerId, Integer categoryId) {
+
+        OffsetDateTime startDate = LocalDate.of(year, month, day != null ? day : 1)
+                .atTime(LocalTime.MIN)
+                .atOffset(ZoneOffset.UTC);
+
+        OffsetDateTime endDate;
+        if (day != null) {
+            // Si especifica día, solo ese día
+            endDate = startDate.plusDays(1);
+        } else {
+            // Si solo mes, todo el mes
+            endDate = startDate.plusMonths(1);
+        }
+
+        List<Event> result;
+        if (careerId != null && categoryId != null) {
+            result = eventRepository.findByMonthCareerAndCategory(startDate, endDate, careerId, categoryId);
+        } else if (careerId != null) {
+            result = eventRepository.findByMonthAndCareer(startDate, endDate, careerId);
+        } else if (categoryId != null) {
+            result = eventRepository.findByMonthAndCategory(startDate, endDate, categoryId);
+        } else {
+            result = eventRepository.findByMonthAndFilters(startDate, endDate);
+        }
+
+        return result.stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<EventResponseDTO> getRegisteredEvents(UUID studentId) {
+        List<EventRegistration> registrations = eventRegistrationRepository.findByStudentId(studentId);
+        return registrations.stream()
+                .map(reg -> eventRepository.findById(reg.getEventId())
+                        .map(event -> mapToDTO(event, studentId))
+                        .orElse(null))
+                .filter(dto -> dto != null)
+                .collect(Collectors.toList());
+    }
+
+    public List<EventResponseDTO> getEventsByStudentCareer(UUID studentId) {
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+
+        if (student.getCareerId() == null) {
+            return new ArrayList<>();
+        }
+
+        return eventRepository.findByCareerIdOrderByStartDatetimeAsc(student.getCareerId())
+                .stream()
+                .map(event -> mapToDTO(event, studentId))
+                .collect(Collectors.toList());
     }
 }
