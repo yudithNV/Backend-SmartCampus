@@ -3,6 +3,7 @@ package com.example.smartcampus.controller;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,13 +19,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
+import com.example.smartcampus.dto.RegisteredEventsResponse;
 import com.example.smartcampus.entity.Role;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.service.EventService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageImpl;
 
 @RestController
 @RequestMapping("/api/events")
@@ -97,9 +98,11 @@ public class EventController {
     }
 
     @GetMapping("/registered")
-    public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getRegisteredEvents(
+    public ResponseEntity<ApiResponse<RegisteredEventsResponse>> getRegisteredEvents(
+            @RequestParam String startDate,
+            @RequestParam String endDate,
             @AuthenticationPrincipal User user) {
-        List<EventResponseDTO> result = eventService.getRegisteredEvents(user.getId());
+        RegisteredEventsResponse result = eventService.getRegisteredEvents(user.getId(), startDate, endDate);
         return ResponseEntity.ok(ApiResponse.ok("Eventos registrados obtenidos correctamente", result));
     }
 

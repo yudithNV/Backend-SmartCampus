@@ -7,7 +7,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,6 +22,7 @@ import com.example.smartcampus.dto.CategoryDTO;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
 import com.example.smartcampus.dto.LocationDTO;
+import com.example.smartcampus.dto.RegisteredEventsResponse;
 import com.example.smartcampus.dto.UserPreferencesDTO;
 import com.example.smartcampus.entity.Event;
 import com.example.smartcampus.entity.EventRegistration;
@@ -458,6 +458,24 @@ public class EventService {
                         .orElse(null))
                 .filter(dto -> dto != null)
                 .collect(Collectors.toList());
+    }
+
+    public RegisteredEventsResponse getRegisteredEvents(UUID studentId, String startDateStr, String endDateStr) {
+        OffsetDateTime startDate = parseDatetime(startDateStr, "00:00");
+        OffsetDateTime endDate = parseDatetime(endDateStr, "23:59");
+
+        List<EventRegistration> registrations = eventRegistrationRepository.findRegisteredEventsByMonthAndStudent(studentId, startDate, endDate);
+        List<EventResponseDTO> events = registrations.stream()
+                .map(reg -> eventRepository.findById(reg.getEventId())
+                        .map(event -> mapToDTO(event, studentId))
+                        .orElse(null))
+                .filter(dto -> dto != null)
+                .collect(Collectors.toList());
+
+        return RegisteredEventsResponse.builder()
+                .events(events)
+                .total(events.size())
+                .build();
     }
 
     public List<EventResponseDTO> getEventsByStudentCareer(UUID studentId) {

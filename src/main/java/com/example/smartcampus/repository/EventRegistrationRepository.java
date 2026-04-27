@@ -34,8 +34,7 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
            "JOIN Event e ON er.eventId = e.id " +
            "WHERE er.studentId = :studentId " +
            "AND e.isActive = true " +
-           "AND e.startDatetime >= :startDate " +
-           "AND e.startDatetime < :endDate " +
+           "AND e.startDatetime BETWEEN :startDate AND :endDate " +
            "ORDER BY e.startDatetime ASC")
     List<EventRegistration> findRegisteredEventsByMonthAndStudent(
             @Param("studentId") UUID studentId,
@@ -48,8 +47,7 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
            "JOIN Event e ON er.eventId = e.id " +
            "WHERE er.studentId = :studentId " +
            "AND e.isActive = true " +
-           "AND e.startDatetime >= :startDate " +
-           "AND e.startDatetime < :endDate " +
+           "AND e.startDatetime BETWEEN :startDate AND :endDate " +
            "AND e.careerId = :careerId " +
            "ORDER BY e.startDatetime ASC")
     List<EventRegistration> findRegisteredEventsByMonthStudentAndCareer(
@@ -64,8 +62,7 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
            "JOIN Event e ON er.eventId = e.id " +
            "WHERE er.studentId = :studentId " +
            "AND e.isActive = true " +
-           "AND e.startDatetime >= :startDate " +
-           "AND e.startDatetime < :endDate " +
+           "AND e.startDatetime BETWEEN :startDate AND :endDate " +
            "AND e.categoryId = :categoryId " +
            "ORDER BY e.startDatetime ASC")
     List<EventRegistration> findRegisteredEventsByMonthStudentAndCategory(
@@ -80,8 +77,7 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
            "JOIN Event e ON er.eventId = e.id " +
            "WHERE er.studentId = :studentId " +
            "AND e.isActive = true " +
-           "AND e.startDatetime >= :startDate " +
-           "AND e.startDatetime < :endDate " +
+           "AND e.startDatetime BETWEEN :startDate AND :endDate " +
            "AND e.careerId = :careerId " +
            "AND e.categoryId = :categoryId " +
            "ORDER BY e.startDatetime ASC")
