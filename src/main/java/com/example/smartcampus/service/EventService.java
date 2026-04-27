@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.smartcampus.dto.*;
 import com.example.smartcampus.entity.Event;
+import com.example.smartcampus.entity.EventRegistration;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.*;
 
@@ -26,6 +27,7 @@ public class EventService {
     private final UserRepository userRepository;
     private final CareerRepository careerRepository;
     private final CategoryRepository categoryRepository;
+    private final EventRegistrationRepository eventRegistrationRepository;
 
     @Transactional
     public EventResponseDTO createEvent(EventCreateDTO dto, User user) {
@@ -258,6 +260,17 @@ public class EventService {
         
         return events.stream()
                 .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<EventResponseDTO> getRegisteredEvents(java.util.UUID studentId) {
+        List<EventRegistration> registrations = eventRegistrationRepository.findByStudentId(studentId);
+        
+        return registrations.stream()
+                .map(reg -> eventRepository.findById(reg.getEventId())
+                        .map(this::mapToDTO)
+                        .orElse(null))
+                .filter(e -> e != null)
                 .collect(Collectors.toList());
     }
 

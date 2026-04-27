@@ -76,6 +76,13 @@ public class EventController {
         return ResponseEntity.ok(ApiResponse.ok("Eventos del calendario obtenidos correctamente", result));
     }
 
+    @GetMapping("/registered")
+    public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getRegisteredEvents(
+            @AuthenticationPrincipal User user) {
+        List<EventResponseDTO> result = eventService.getRegisteredEvents(user.getId());
+        return ResponseEntity.ok(ApiResponse.ok("Eventos registrados obtenidos correctamente", result));
+    }
+
     @GetMapping("/recent")
     public ResponseEntity<Page<EventResponseDTO>> getRecent(
             @RequestParam(required = false) String search,
