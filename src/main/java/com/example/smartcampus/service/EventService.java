@@ -478,6 +478,43 @@ public class EventService {
                 .build();
     }
 
+    public RegisteredEventsResponse getRegisteredEvents(
+            UUID studentId, String startDateStr, String endDateStr, 
+            Integer careerId, Integer categoryId) {
+        
+        OffsetDateTime startDate = parseDatetime(startDateStr, "00:00");
+        OffsetDateTime endDate = parseDatetime(endDateStr, "23:59");
+
+        List<EventRegistration> registrations;
+        
+        // Usar diferentes métodos del repositorio según los filtros disponibles
+        if (careerId != null && categoryId != null) {
+            registrations = eventRegistrationRepository.findRegisteredEventsByMonthStudentCareerAndCategory(
+                studentId, startDate, endDate, careerId, categoryId);
+        } else if (careerId != null) {
+            registrations = eventRegistrationRepository.findRegisteredEventsByMonthStudentAndCareer(
+                studentId, startDate, endDate, careerId);
+        } else if (categoryId != null) {
+            registrations = eventRegistrationRepository.findRegisteredEventsByMonthStudentAndCategory(
+                studentId, startDate, endDate, categoryId);
+        } else {
+            registrations = eventRegistrationRepository.findRegisteredEventsByMonthAndStudent(
+                studentId, startDate, endDate);
+        }
+
+        List<EventResponseDTO> events = registrations.stream()
+                .map(reg -> eventRepository.findById(reg.getEventId())
+                        .map(event -> mapToDTO(event, studentId))
+                        .orElse(null))
+                .filter(dto -> dto != null)
+                .collect(Collectors.toList());
+
+        return RegisteredEventsResponse.builder()
+                .events(events)
+                .total(events.size())
+                .build();
+    }
+
     public List<EventResponseDTO> getEventsByStudentCareer(UUID studentId) {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));

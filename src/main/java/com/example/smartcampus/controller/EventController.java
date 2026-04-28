@@ -101,8 +101,11 @@ public class EventController {
     public ResponseEntity<ApiResponse<RegisteredEventsResponse>> getRegisteredEvents(
             @RequestParam String startDate,
             @RequestParam String endDate,
+            @RequestParam(required = false) Integer career_id,
+            @RequestParam(required = false) Integer category_id,
             @AuthenticationPrincipal User user) {
-        RegisteredEventsResponse result = eventService.getRegisteredEvents(user.getId(), startDate, endDate);
+        RegisteredEventsResponse result = eventService.getRegisteredEvents(
+            user.getId(), startDate, endDate, career_id, category_id);
         return ResponseEntity.ok(ApiResponse.ok("Eventos registrados obtenidos correctamente", result));
     }
 
