@@ -44,14 +44,13 @@ public class EventController {
 
     @GetMapping
     public ResponseEntity<Page<EventResponseDTO>> listEvents(
-            @RequestParam(defaultValue = "0")    int page,
-            @RequestParam(defaultValue = "10")   int size,
-            @RequestParam(defaultValue = "startDatetime") String sortBy,
-            @RequestParam(required = false) String eventType,
-            @RequestParam(required = false) Integer careerId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortType,
             @AuthenticationPrincipal User user) {
 
-        Page<EventResponseDTO> result = eventService.listEvents(page, size, sortBy, eventType, careerId);
+        Page<EventResponseDTO> result = eventService.listEvents(page, size, sortBy, sortType);
 
         // SCRUM-145 / SCRUM-403: si es ESTUDIANTE, reordenar según preferencias
         if (user != null && user.getRole() == Role.ESTUDIANTE) {
@@ -73,10 +72,14 @@ public class EventController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<ApiResponse<List<EventResponseDTO>>> getMyEvents(
+    public ResponseEntity<Page<EventResponseDTO>> getMyEvents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String sortType,
             @AuthenticationPrincipal User user) {
-        List<EventResponseDTO> result = eventService.getEventsByAuthor(user);
-        return ResponseEntity.ok(ApiResponse.ok("Tus eventos obtenidos correctamente", result));
+        Page<EventResponseDTO> result = eventService.getEventsByAuthor(user, page, size, sortBy, sortType);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/career/{careerId}")

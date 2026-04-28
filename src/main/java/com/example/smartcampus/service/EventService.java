@@ -99,6 +99,16 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
+    public Page<EventResponseDTO> getEventsByAuthor(User user, int page, int size, String sortBy, String sortType) {
+        Sort sort = buildSort(sortBy, sortType,
+                List.of("createdAt", "startDatetime", "name", "maxCapacity"),
+                "createdAt");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Event> result = eventRepository.findByAuthorId(user.getId(), pageable);
+        return result.map(this::mapToDTO);
+    }
+
     public List<EventResponseDTO> getEventsByCareer(Integer careerId) {
         return eventRepository
                 .findByCareerIdOrderByStartDatetimeAsc(careerId)
@@ -210,6 +220,18 @@ public class EventService {
     }
 
     public Page<EventResponseDTO> listEvents(
+            int page, int size, String sortBy, String sortType) {
+
+        Sort sort = buildSort(sortBy, sortType,
+                List.of("createdAt", "startDatetime", "name", "maxCapacity"),
+                "createdAt");
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        Page<Event> result = eventRepository.findAllByIsActiveTrue(pageable);
+        return result.map(this::mapToDTO);
+    }
+
+    public Page<EventResponseDTO> listEventsOld(
             int page, int size, String sortBy, String eventType, Integer careerId) {
 
         Sort sort = buildSort(sortBy, null,

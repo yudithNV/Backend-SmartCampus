@@ -32,6 +32,9 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Buscar eventos por organizador (autor)
     List<Event> findByAuthorIdOrderByCreatedAtDesc(UUID authorId);
 
+    // Buscar eventos por organizador (autor) con paginación
+    Page<Event> findByAuthorId(UUID authorId, Pageable pageable);
+
     // Verificar conflicto de horario en la misma ubicación
     @Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Event e " +
            "WHERE e.locationId = :locationId " +
