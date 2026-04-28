@@ -5,12 +5,14 @@ import com.example.smartcampus.dto.NewsResponseDTO;
 import com.example.smartcampus.entity.Career;
 import com.example.smartcampus.entity.News;
 import com.example.smartcampus.entity.NewsCategory;
+import com.example.smartcampus.entity.NewsStatus;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.CareerRepository;
 import com.example.smartcampus.repository.NewsRepository;
 import com.example.smartcampus.repository.UserRepository;
 
 import exception.ForbiddenException;
+import exception.InvalidScheduledDateException;
 import exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,9 +35,14 @@ public class NewsService {
 
     private final NewsRepository newsRepository;
     private final UserRepository userRepository;
-    private final CareerRepository careerRepository;
+    private final CareerRepository careerRepository;    
+    private static final long MIN_SCHEDULED_MINUTES = 5;
+
 
     public NewsResponseDTO createNews(NewsCreateDTO dto, User author) {
+        NewsStatus status = resolveStatus(dto);
+        OffsetDateTime scheduledAt = resolveScheduledAt(dto, status);
+
         News news = News.builder()
                 .title(dto.getTitle())
                 .body(dto.getBody())
@@ -44,16 +51,17 @@ public class NewsService {
                 .attachmentUrl(dto.getAttachmentUrl())
                 .careerId(dto.getCareerId())
                 .authorId(author.getId())
-                .published(dto.getPublished() != null ? dto.getPublished() : true)
+                .newsStatus(status)
+                .scheduledAt(scheduledAt)
                 .createdAt(OffsetDateTime.now())
                 .updatedAt(OffsetDateTime.now())
                 .build();
-
+        news.syncPublished();
         return toDTO(newsRepository.save(news));
     }
 
     public List<NewsResponseDTO> getAllPublished() {
-        return toDTOList(newsRepository.findAllByPublishedTrueOrderByCreatedAtDesc());
+        return toDTOList(newsRepository.findAllByNewsStatusOrderByCreatedAtDesc(NewsStatus.PUBLICADO));
     }
 
     public List<NewsResponseDTO> getNewsByAuthor(User author) {
@@ -75,7 +83,15 @@ public class NewsService {
         if (dto.getAttachmentUrl() != null) news.setAttachmentUrl(dto.getAttachmentUrl());
         if (dto.getCareerId() != null) news.setCareerId(dto.getCareerId());
         if (dto.getPublished() != null) news.setPublished(dto.getPublished());
-
+        if (dto.getNewsStatus() != null || dto.getPublished() != null) {NewsStatus newStatus = resolveStatus(dto);
+                OffsetDateTime newScheduledAt = resolveScheduledAt(dto, newStatus);
+        if (news.getNewsStatus() == NewsStatus.PROGRAMADO && newStatus == NewsStatus.BORRADOR) {news.setScheduledAt(null);
+                } else {
+                        news.setScheduledAt(newScheduledAt);
+                }
+                        news.setNewsStatus(newStatus);
+                        news.syncPublished();
+        }
         news.setUpdatedAt(OffsetDateTime.now());
 
         return toDTO(newsRepository.save(news));
@@ -139,6 +155,34 @@ public class NewsService {
         return result.map(n -> toDTO(n));  
   }
 
+
+   private NewsStatus resolveStatus(NewsCreateDTO dto) {
+        if (dto.getNewsStatus() != null) {
+            return dto.getNewsStatus();
+        }
+        if (dto.getPublished() != null) {
+            return dto.getPublished() ? NewsStatus.PUBLICADO : NewsStatus.BORRADOR;
+        }
+        return NewsStatus.PUBLICADO; // default
+    }
+ 
+    private OffsetDateTime resolveScheduledAt(NewsCreateDTO dto, NewsStatus status) {
+        if (status != NewsStatus.PROGRAMADO) {
+            return null;
+        }
+        if (dto.getScheduledAt() == null) {
+            throw new InvalidScheduledDateException(
+                    "Se requiere 'scheduledAt' cuando el estado es PROGRAMADO.");
+        }
+        OffsetDateTime minAllowed = OffsetDateTime.now().plusMinutes(MIN_SCHEDULED_MINUTES);
+        if (dto.getScheduledAt().isBefore(minAllowed)) {
+            throw new InvalidScheduledDateException(
+                    "La fecha programada debe ser al menos " + MIN_SCHEDULED_MINUTES
+                    + " minutos en el futuro.");
+        }
+        return dto.getScheduledAt();
+    }
+
     private List<NewsResponseDTO> toDTOList(List<News> newsList) {
         Set<UUID> authorIds = newsList.stream()
                 .map(News::getAuthorId)
@@ -180,6 +224,8 @@ public class NewsService {
                 n.getAuthorId(),
                 authorName,
                 n.getPublished(),
+                n.getNewsStatus(),       
+                n.getScheduledAt(),
                 n.getCreatedAt(),
                 n.getUpdatedAt()
         );

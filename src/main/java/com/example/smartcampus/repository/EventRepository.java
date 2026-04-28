@@ -1,6 +1,10 @@
 package com.example.smartcampus.repository;
 
-import com.example.smartcampus.entity.Event;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,10 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import com.example.smartcampus.entity.Event;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, Long> {
@@ -31,11 +32,14 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Buscar eventos por organizador (autor)
     List<Event> findByAuthorIdOrderByCreatedAtDesc(UUID authorId);
 
+    // Buscar eventos por organizador (autor) con paginación
+    Page<Event> findByAuthorId(UUID authorId, Pageable pageable);
+
     // Verificar conflicto de horario en la misma ubicación
     @Query("SELECT CASE WHEN COUNT(e) > 0 THEN true ELSE false END FROM Event e " +
            "WHERE e.locationId = :locationId " +
            "AND e.id != :eventId " +
-           "AND ((e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime))")
+           "AND (e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime)")
     boolean existsConflictingEvent(
             @Param("locationId") Integer locationId,
             @Param("startDatetime") OffsetDateTime startDatetime,
@@ -47,7 +51,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     @Query("SELECT e FROM Event e " +
            "WHERE e.locationId = :locationId " +
            "AND e.id != :eventId " +
-           "AND ((e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime)) " +
+           "AND (e.startDatetime <= :endDatetime AND e.endDatetime >= :startDatetime) " +
+           "ORDER BY e.startDatetime ASC " +
            "LIMIT 1")
     Optional<Event> findConflictingEvent(
             @Param("locationId") Integer locationId,
@@ -83,4 +88,66 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     // Búsqueda + categoría + carrera
     Page<Event> findByIsActiveTrueAndNameContainingIgnoreCaseAndCategoryIdAndCareerId(
             String name, Integer categoryId, Integer careerId, Pageable pageable);
+
+    @Query("SELECT e FROM Event e WHERE e.isActive = true AND CAST(e.eventType AS string) = :eventType")
+    Page<Event> findByIsActiveTrueAndEventType(
+            @Param("eventType") String eventType, Pageable pageable);
+
+    @Query("SELECT e FROM Event e WHERE e.isActive = true AND CAST(e.eventType AS string) = :eventType AND e.careerId = :careerId")
+    Page<Event> findByIsActiveTrueAndEventTypeAndCareerId(
+            @Param("eventType") String eventType,
+            @Param("careerId") Integer careerId,
+            Pageable pageable);
+
+    // Eventos por rango de fechas (mes) - solo con startDatetime
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndFilters(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate
+    );
+
+    // Eventos por rango de fechas + carrera
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.careerId = :careerId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndCareer(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("careerId") Integer careerId
+    );
+
+    // Eventos por rango de fechas + categoría
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.categoryId = :categoryId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthAndCategory(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("categoryId") Integer categoryId
+    );
+
+    // Eventos por rango de fechas + carrera + categoría
+    @Query("SELECT e FROM Event e " +
+           "WHERE e.isActive = true " +
+           "AND e.startDatetime >= :startDate " +
+           "AND e.startDatetime < :endDate " +
+           "AND e.careerId = :careerId " +
+           "AND e.categoryId = :categoryId " +
+           "ORDER BY e.startDatetime ASC")
+    List<Event> findByMonthCareerAndCategory(
+            @Param("startDate") OffsetDateTime startDate,
+            @Param("endDate") OffsetDateTime endDate,
+            @Param("careerId") Integer careerId,
+            @Param("categoryId") Integer categoryId
+    );
 }

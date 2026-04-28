@@ -1,6 +1,10 @@
 package com.example.smartcampus.dto;
 
+import java.time.OffsetDateTime;
+
 import com.example.smartcampus.entity.NewsCategory;
+import com.example.smartcampus.entity.NewsStatus;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -21,4 +25,8 @@ public class NewsCreateDTO {
     private String attachmentUrl;
     private Integer careerId;
     private Boolean published;
+    private NewsStatus newsStatus;
+    private OffsetDateTime scheduledAt;
+
+
 }

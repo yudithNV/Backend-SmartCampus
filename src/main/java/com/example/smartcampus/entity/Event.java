@@ -51,7 +51,7 @@ public class Event {
     @Column(name = "max_capacity")
     private Integer maxCapacity;
 
-    @Column(name = "poster_url", columnDefinition = "TEXT")
+    @Column(name = "poster_url", length = 500)
     private String posterUrl;
 
     @Column(name = "career_id")

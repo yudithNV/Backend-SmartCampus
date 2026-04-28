@@ -2,6 +2,7 @@ package com.example.smartcampus.service;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import com.example.smartcampus.dto.UserCreateDTO;
 import com.example.smartcampus.dto.UserCreateResponseDTO;
 import com.example.smartcampus.dto.UserListDTO;
+import com.example.smartcampus.dto.UserUpdateDTO;
 import com.example.smartcampus.entity.Role;
 import com.example.smartcampus.entity.Status;
 import com.example.smartcampus.entity.User;
@@ -33,7 +35,7 @@ public class UserService {
 
     public User createUser(UserCreateDTO dto) {
 
-        if(userRepository.existsByEmail(dto.getEmail())){
+        if (userRepository.existsByEmail(dto.getEmail())) {
             throw new RuntimeException("El correo ya existe");
         }
 
@@ -70,36 +72,90 @@ public class UserService {
         );
     }
 
-    // ✅ CAMBIO: Ahora acepta paginación, ordenación y filtros
+    // ─── Actualizar usuario por ID ─────────────────────────────────────────────
+    public UserListDTO updateUser(UUID id, UserUpdateDTO dto) {
+
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // PA: verificar que el nuevo correo no esté siendo usado por otra persona
+        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(user.getEmail())) {
+            if (userRepository.existsByEmail(dto.getEmail())) {
+                throw new RuntimeException("El correo ya está en uso por otro usuario");
+            }
+        }
+
+        if (dto.getFullName() != null && !dto.getFullName().isBlank()) {
+            user.setFullName(dto.getFullName());
+        }
+        if (dto.getEmail() != null && !dto.getEmail().isBlank()) {
+            user.setEmail(dto.getEmail());
+        }
+        if (dto.getRole() != null && !dto.getRole().isBlank()) {
+            user.setRole(Role.valueOf(dto.getRole()));
+        }
+        if (dto.getStatus() != null && !dto.getStatus().isBlank()) {
+            user.setStatus(Status.valueOf(dto.getStatus()));
+        }
+        // careerId puede ser null intencionalmente (ej. si cambia a PUBLICADOR)
+        if (dto.getCareerId() != null) {
+            user.setCareerId(dto.getCareerId());
+        } else if ("PUBLICADOR".equals(dto.getRole()) || "ADMINISTRADOR".equals(dto.getRole())) {
+            user.setCareerId(null);
+        }
+
+        user.setUpdatedAt(OffsetDateTime.now());
+        User saved = userRepository.save(user);
+
+        UserListDTO.CareerInfo careerInfo = getCareerInfo(saved);
+        return new UserListDTO(
+            saved.getId(),
+            saved.getFullName(),
+            saved.getEmail(),
+            saved.getRole().name(),
+            careerInfo,
+            saved.getStatus().name(),
+            saved.getCreatedAt().toString()
+        );
+    }
+
+    // ─── Eliminar usuario por ID ───────────────────────────────────────────────
+    public void deleteUser(UUID id, UUID requestingAdminId) {
+        if (id.equals(requestingAdminId)) {
+            throw new RuntimeException("No puedes eliminar tu propia cuenta de administrador");
+        }
+
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        userRepository.delete(user);
+    }
+
+    // ─── Listar usuarios con paginación, filtros y ordenación ─────────────────
     public Page<UserListDTO> listAllUsers(
-            String search, 
+            String search,
             String career,
-            String role, 
-            String status, 
-            int page, 
-            int size, 
-            String sortBy, 
+            String role,
+            String status,
+            int page,
+            int size,
+            String sortBy,
             String sortType) {
-        
-        // ✅ Validar que sortBy sea un campo válido para evitar SQL injection
+
         List<String> allowedSortFields = List.of("createdAt", "fullName", "email", "role", "status");
         String safeSortBy = allowedSortFields.contains(sortBy) ? sortBy : "createdAt";
 
-        // ✅ Construir el Sort (ASC o DESC)
         Sort sort = sortType != null && sortType.equalsIgnoreCase("ASC")
                 ? Sort.by(safeSortBy).ascending()
                 : Sort.by(safeSortBy).descending();
 
-        // ✅ Crear el Pageable con paginación + ordenación
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // ✅ Construye la especificación combinando búsqueda + filtros
         Specification<User> spec = UserSpecification.searchByNameOrEmail(search)
             .and(UserSpecification.filterByCareer(career))
             .and(UserSpecification.filterByRole(role))
             .and(UserSpecification.filterByStatus(status));
 
-        // ✅ Busca con Specification + Paginación
         Page<User> users = userRepository.findAll(spec, pageable);
 
         List<UserListDTO> dtos = users.stream()
@@ -131,13 +187,5 @@ public class UserService {
                 career.getCode()
             ))
             .orElse(null);
-    }
-
-    private String getCareerName(User user) {
-        if (user.getRole() != Role.ESTUDIANTE || user.getCareerId() == null) {
-            return "N/A";
-        }
-        return careerService.getCareerNameById(user.getCareerId())
-            .orElse("Carrera no encontrada");
     }
 }

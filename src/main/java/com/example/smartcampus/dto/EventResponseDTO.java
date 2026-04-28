@@ -1,13 +1,14 @@
 package com.example.smartcampus.dto;
 
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
 import com.example.smartcampus.entity.EventType;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.OffsetDateTime;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -28,6 +29,13 @@ public class EventResponseDTO {
     private String authorName;
     private Boolean isActive;
     private CategoryDTO category;
+
+   
+    private Integer categoryId;
+
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private Boolean recommended;
+    private Long registeredCount;
+    private Boolean isRegistered;
 }

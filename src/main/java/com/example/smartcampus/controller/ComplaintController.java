@@ -24,11 +24,13 @@ public class ComplaintController {
     private final ComplaintService complaintService;
 
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024; // 10 MB
+    private static final int MAX_FILES_PER_COMPLAINT = 5;
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
             "image/jpeg", "image/png", "image/webp", "image/gif"
     );
     private static final Set<String> ALLOWED_DOC_TYPES = Set.of(
-            "application/pdf"
+            "application/pdf",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     );
 
     /**
@@ -72,7 +74,7 @@ public class ComplaintController {
                 if (contentType == null ||
                         (!ALLOWED_IMAGE_TYPES.contains(contentType) && !ALLOWED_DOC_TYPES.contains(contentType))) {
                     return ResponseEntity.badRequest()
-                            .body(ApiResponse.error("Solo se permiten imágenes (JPG, PNG, WEBP, GIF) o archivos PDF"));
+                        .body(ApiResponse.error("Solo se permiten imágenes (JPG, PNG, WEBP, GIF), PDF o DOCX"));
                 }
             }
 
@@ -82,6 +84,31 @@ public class ComplaintController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
                     .body(ApiResponse.error("Error al crear el reclamo: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/{id}/adjuntos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<ComplaintResponseDTO>> addAttachments(
+            @PathVariable Long id,
+            @RequestPart("files") List<MultipartFile> files,
+            @AuthenticationPrincipal User student) {
+
+        if (files.size() > MAX_FILES_PER_COMPLAINT) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Máximo 5 archivos por reclamo."));
+        }
+
+        try {
+            ComplaintResponseDTO result = complaintService.addAttachments(id, files, student);
+            return ResponseEntity.ok(ApiResponse.ok("Adjuntos guardados correctamente", result));
+
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403)
+                    .body(ApiResponse.error("No tienes permiso para modificar este reclamo."));
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Error al guardar adjuntos: " + e.getMessage()));
         }
     }
 

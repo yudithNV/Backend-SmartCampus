@@ -46,6 +46,8 @@ public class SecurityConfig {
                 // Usuarios
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
+                .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.GET,  "/api/users").permitAll()
 
                 // Carreras
                 .requestMatchers(HttpMethod.GET, "/api/careers").permitAll()
@@ -70,10 +72,13 @@ public class SecurityConfig {
                 // Eventos — lectura pública
                 .requestMatchers(HttpMethod.GET, "/api/events").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/events/**").permitAll()
-                // Eventos — escritura solo PUBLICADOR
+                // Inscripción/cancelación de eventos (usuarios autenticados)
+                .requestMatchers(HttpMethod.POST, "/api/events/*/register").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/events/*/register").authenticated()
+                // Eventos — escritura solo PUBLICADOR (POST en raíz, PUT y DELETE en específicos)
                 .requestMatchers(HttpMethod.POST,   "/api/events").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.PUT,    "/api/events/**").hasRole("PUBLICADOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/events/**").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.PUT,    "/api/events/*").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/events/*").hasRole("PUBLICADOR")
 
                 // Reclamos
                 .requestMatchers("/api/complaints/**").authenticated()

@@ -29,11 +29,25 @@ public class SuggestionController {
         return ResponseEntity.ok(ApiResponse.ok("Sugerencia enviada correctamente", result));
     }
 
-    // GET /api/suggestions/my — historial del estudiante (escalable para futuro)
+    // GET /api/suggestions/my — historial del estudiante
     @GetMapping("/my")
     public ResponseEntity<ApiResponse<List<SuggestionResponseDTO>>> getMy(
             @AuthenticationPrincipal User user) {
         List<SuggestionResponseDTO> result = service.getMy(user);
         return ResponseEntity.ok(ApiResponse.ok("Sugerencias obtenidas correctamente", result));
+    }
+
+    // DELETE /api/suggestions/{id} — solo el dueño puede eliminar su sugerencia
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        try {
+            service.delete(id, user);
+            return ResponseEntity.ok(ApiResponse.ok("Sugerencia eliminada correctamente", null));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.ok(e.getMessage(), null));
+        }
     }
 }
