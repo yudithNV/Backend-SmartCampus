@@ -231,7 +231,7 @@ public class NewsService {
             n.getScheduledAt(),
             n.getCreatedAt(),
             n.getUpdatedAt(),
-            false // isFavorite por defecto
+            false 
     );
 }
 
