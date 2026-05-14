@@ -9,6 +9,7 @@ import com.example.smartcampus.entity.ComplaintStatus;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.ComplaintRepository;
 import com.example.smartcampus.repository.ComplaintResponseRepository;
+import com.example.smartcampus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +29,7 @@ public class ComplaintService {
     private final ComplaintRepository complaintRepository;
     private final ComplaintResponseRepository complaintResponseRepository;
     private final SupabaseStorageService supabaseStorageService;
+    private final UserRepository userRepository;
     private final Random random = new Random();
 
     /**
@@ -105,6 +107,15 @@ public class ComplaintService {
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtiene un reclamo por ID
+     */
+    public ComplaintResponseDTO getComplaintById(Long id) {
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reclamo no encontrado"));
+        return mapToDTO(complaint);
     }
 
     /**
@@ -199,10 +210,14 @@ public class ComplaintService {
      * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO
      */
     private ComplaintResponseDetailDTO mapResponseToDTO(com.example.smartcampus.entity.ComplaintResponse response) {
+        User admin = userRepository.findById(response.getAdminId())
+                .orElseThrow(() -> new RuntimeException("Admin no encontrado"));
+        
         return ComplaintResponseDetailDTO.builder()
                 .id(response.getId())
                 .complaintId(response.getComplaintId())
                 .adminId(response.getAdminId())
+                .adminName(admin.getFullName())
                 .body(response.getBody())
                 .isClosing(response.getIsClosing())
                 .createdAt(response.getCreatedAt())
