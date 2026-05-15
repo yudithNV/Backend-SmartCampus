@@ -42,6 +42,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/test").permitAll()
                 .requestMatchers("/api/auth/me").authenticated()
+                // Reset password
+                .requestMatchers("/api/auth/forgot-password").permitAll()
+                .requestMatchers("/api/auth/validate-reset-token").permitAll()
+                .requestMatchers("/api/auth/reset-password").permitAll()
+                .requestMatchers("/api/auth/me").authenticated()
+
 
                 // Usuarios
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
