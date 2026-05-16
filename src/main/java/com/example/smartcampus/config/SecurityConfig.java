@@ -88,7 +88,7 @@ public class SecurityConfig {
 
                 // ── NUEVO: Logs de acceso — solo ADMINISTRADOR ────────────────
                 .requestMatchers(HttpMethod.GET, "/api/access-logs").hasRole("ADMINISTRADOR")
-
+                .requestMatchers(HttpMethod.PATCH, "/api/users/*/status").hasRole("ADMINISTRADOR")
                 // Error
                 .requestMatchers("/error").permitAll()
 
