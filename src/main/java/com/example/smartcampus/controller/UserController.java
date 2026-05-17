@@ -17,14 +17,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.UpdateUserStatusDTO;
 import com.example.smartcampus.dto.UserCreateDTO;
 import com.example.smartcampus.dto.UserListDTO;
 import com.example.smartcampus.dto.UserUpdateDTO;
+import com.example.smartcampus.entity.Status;
 import com.example.smartcampus.entity.User;
+import com.example.smartcampus.service.AccessLogService;
 import com.example.smartcampus.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final UserService userService;
+    private final AccessLogService accessLogService;
 
     @PostMapping
     public ResponseEntity<?> createUser(@Valid @RequestBody UserCreateDTO dto) {
@@ -73,7 +78,8 @@ public class UserController {
     public ResponseEntity<ApiResponse<UserListDTO>> updateUserStatus(
             @PathVariable UUID id,
             @RequestBody UpdateUserStatusDTO dto,
-            @AuthenticationPrincipal User currentUser) {
+            @AuthenticationPrincipal User currentUser,
+            HttpServletRequest httpRequest) {
 
         try {
 
@@ -81,6 +87,12 @@ public class UserController {
                     id,
                     dto.getStatus(),
                     currentUser.getId());
+
+            String ip = httpRequest.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isBlank()) ip = httpRequest.getRemoteAddr();
+            String action = dto.getStatus() == Status.BLOQUEADO ? "BLOCKED" : "UNBLOCKED";
+            accessLogService.recordAdminAction(updated.getEmail(), ip,
+                httpRequest.getHeader("User-Agent"), action);
 
             return ResponseEntity.ok(
                     ApiResponse.ok(
