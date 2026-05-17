@@ -88,6 +88,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/admin/complaints/**").hasRole("ADMINISTRADOR")
                 .requestMatchers(HttpMethod.POST,  "/api/admin/complaints/**").hasRole("ADMINISTRADOR")
 
+                // Dashboard — admin
+                .requestMatchers(HttpMethod.GET, "/api/dashboard/admin").hasRole("ADMINISTRADOR")
+
                 // Categorías
                 .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
 
