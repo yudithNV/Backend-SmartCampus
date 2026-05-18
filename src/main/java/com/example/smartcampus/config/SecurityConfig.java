@@ -83,6 +83,9 @@ public class SecurityConfig {
                 // Reclamos
                 .requestMatchers("/api/complaints/**").authenticated()
 
+                // Chatbot
+                .requestMatchers("/api/chatbot/**").hasRole("ESTUDIANTE")
+
                 // Categorías
                 .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
 
