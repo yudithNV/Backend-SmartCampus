@@ -61,10 +61,23 @@ public class SecurityConfig {
                 // Ubicaciones
                 .requestMatchers(HttpMethod.GET, "/api/locations").permitAll()
 
-                // Noticias — lectura pública
+                // ── FAVORITOS  ─────────────
+                .requestMatchers(HttpMethod.GET,
+                    "/api/news/favorites",
+                    "/api/news/favorites/**")
+                    .hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
+                .requestMatchers(HttpMethod.POST,
+                    "/api/news/favorites/**")
+                    .hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
+                .requestMatchers(HttpMethod.DELETE,
+                    "/api/news/favorites/**")
+                    .hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
+
+                // ── Noticias  
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
-                // Noticias — escritura solo PUBLICADOR
+
+                // ── Noticias  solo PUBLICADOR 
                 .requestMatchers(HttpMethod.POST,   "/api/news").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.PUT,    "/api/news/**").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/news/**").hasRole("PUBLICADOR")
