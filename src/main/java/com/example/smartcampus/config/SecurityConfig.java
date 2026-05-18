@@ -80,8 +80,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT,    "/api/events/*").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/events/*").hasRole("PUBLICADOR")
 
-                // Reclamos
+                // Reclamos — estudiante
                 .requestMatchers("/api/complaints/**").authenticated()
+                
+                // Reclamos — admin
+                .requestMatchers(HttpMethod.GET,   "/api/admin/complaints/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.PATCH, "/api/admin/complaints/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.POST,  "/api/admin/complaints/**").hasRole("ADMINISTRADOR")
 
                 // Categorías
                 .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()

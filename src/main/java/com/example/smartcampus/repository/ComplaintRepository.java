@@ -16,4 +16,7 @@ public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
 
     // Verificar si existe un tracking number (para generación única)
     boolean existsByTrackingNumber(String trackingNumber);
+
+    // Obtener todos los reclamos ordenados por fecha
+    List<Complaint> findAllByOrderByCreatedAtDesc();
 }

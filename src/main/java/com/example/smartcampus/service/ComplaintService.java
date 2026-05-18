@@ -2,10 +2,13 @@ package com.example.smartcampus.service;
 
 import com.example.smartcampus.dto.ComplaintCreateDTO;
 import com.example.smartcampus.dto.ComplaintResponseDTO;
+import com.example.smartcampus.dto.ComplaintDetailDTO;
+import com.example.smartcampus.dto.ComplaintResponseDetailDTO;
 import com.example.smartcampus.entity.Complaint;
 import com.example.smartcampus.entity.ComplaintStatus;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.ComplaintRepository;
+import com.example.smartcampus.repository.ComplaintResponseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,6 +26,7 @@ import java.util.stream.Collectors;
 public class ComplaintService {
 
     private final ComplaintRepository complaintRepository;
+    private final ComplaintResponseRepository complaintResponseRepository;
     private final SupabaseStorageService supabaseStorageService;
     private final Random random = new Random();
 
@@ -105,6 +108,43 @@ public class ComplaintService {
     }
 
     /**
+     * Obtiene todos los reclamos (para administrador)
+     */
+    public List<ComplaintResponseDTO> getAllComplaints() {
+        return complaintRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtiene un reclamo por ID con sus respuestas
+     */
+    public ComplaintDetailDTO getComplaintDetail(Long complaintId) {
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new RuntimeException("Reclamo no encontrado"));
+
+        List<ComplaintResponseDetailDTO> responses = complaintResponseRepository
+                .findByComplaintIdOrderByCreatedAtDesc(complaintId)
+                .stream()
+                .map(this::mapResponseToDTO)
+                .collect(Collectors.toList());
+
+        return mapToDetailDTO(complaint, responses);
+    }
+
+    /**
+     * Cambia el estado de un reclamo a EN_REVISION
+     */
+    public ComplaintResponseDTO updateStatusToUnderReview(Long complaintId) {
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new RuntimeException("Reclamo no encontrado"));
+
+        complaint.setStatus(ComplaintStatus.EN_REVISION);
+        return mapToDTO(complaintRepository.save(complaint));
+    }
+
+    /**
      * Genera un tracking number único en formato: REC-YYYYMMDD-XXXXX
      */
     private String generateUniqueTrackingNumber() {
@@ -133,6 +173,39 @@ public class ComplaintService {
                 .evidenceUrl(complaint.getEvidenceUrl())
                 .createdAt(complaint.getCreatedAt())
                 .updatedAt(complaint.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * Mapea una entidad Complaint a ComplaintDetailDTO con respuestas
+     */
+    private ComplaintDetailDTO mapToDetailDTO(Complaint complaint, List<ComplaintResponseDetailDTO> responses) {
+        return ComplaintDetailDTO.builder()
+                .id(complaint.getId())
+                .studentId(complaint.getStudentId())
+                .trackingNumber(complaint.getTrackingNumber())
+                .title(complaint.getTitle())
+                .body(complaint.getBody())
+                .category(complaint.getCategory())
+                .status(complaint.getStatus())
+                .evidenceUrl(complaint.getEvidenceUrl())
+                .createdAt(complaint.getCreatedAt())
+                .updatedAt(complaint.getUpdatedAt())
+                .responses(responses)
+                .build();
+    }
+
+    /**
+     * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO
+     */
+    private ComplaintResponseDetailDTO mapResponseToDTO(com.example.smartcampus.entity.ComplaintResponse response) {
+        return ComplaintResponseDetailDTO.builder()
+                .id(response.getId())
+                .complaintId(response.getComplaintId())
+                .adminId(response.getAdminId())
+                .body(response.getBody())
+                .isClosing(response.getIsClosing())
+                .createdAt(response.getCreatedAt())
                 .build();
     }
 }
