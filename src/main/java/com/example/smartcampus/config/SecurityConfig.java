@@ -42,6 +42,12 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/auth/test").permitAll()
                 .requestMatchers("/api/auth/me").authenticated()
+                // Reset password
+                .requestMatchers("/api/auth/forgot-password").permitAll()
+                .requestMatchers("/api/auth/validate-reset-token").permitAll()
+                .requestMatchers("/api/auth/reset-password").permitAll()
+                .requestMatchers("/api/auth/me").authenticated()
+
 
                 // Usuarios
                 .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
@@ -55,10 +61,23 @@ public class SecurityConfig {
                 // Ubicaciones
                 .requestMatchers(HttpMethod.GET, "/api/locations").permitAll()
 
-                // Noticias — lectura pública
+                // ── FAVORITOS  ─────────────
+                .requestMatchers(HttpMethod.GET,
+                    "/api/news/favorites",
+                    "/api/news/favorites/**")
+                    .hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
+                .requestMatchers(HttpMethod.POST,
+                    "/api/news/favorites/**")
+                    .hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
+                .requestMatchers(HttpMethod.DELETE,
+                    "/api/news/favorites/**")
+                    .hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
+
+                // ── Noticias  
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
-                // Noticias — escritura solo PUBLICADOR
+
+                // ── Noticias  solo PUBLICADOR 
                 .requestMatchers(HttpMethod.POST,   "/api/news").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.PUT,    "/api/news/**").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/news/**").hasRole("PUBLICADOR")
@@ -80,8 +99,16 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT,    "/api/events/*").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/events/*").hasRole("PUBLICADOR")
 
-                // Reclamos
+                // Reclamos — estudiante
                 .requestMatchers("/api/complaints/**").authenticated()
+                
+                // Reclamos — admin
+                .requestMatchers(HttpMethod.GET,   "/api/admin/complaints/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.PATCH, "/api/admin/complaints/**").hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.POST,  "/api/admin/complaints/**").hasRole("ADMINISTRADOR")
+
+                // Dashboard — admin
+                .requestMatchers(HttpMethod.GET, "/api/dashboard/admin").hasRole("ADMINISTRADOR")
 
                 // Chatbot
                 .requestMatchers("/api/chatbot/**").hasRole("ESTUDIANTE")
@@ -91,7 +118,7 @@ public class SecurityConfig {
 
                 // ── NUEVO: Logs de acceso — solo ADMINISTRADOR ────────────────
                 .requestMatchers(HttpMethod.GET, "/api/access-logs").hasRole("ADMINISTRADOR")
-
+                .requestMatchers(HttpMethod.PATCH, "/api/users/*/status").hasRole("ADMINISTRADOR")
                 // Error
                 .requestMatchers("/error").permitAll()
 

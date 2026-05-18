@@ -3,8 +3,10 @@ package com.example.smartcampus.controller;
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.ComplaintCreateDTO;
 import com.example.smartcampus.dto.ComplaintResponseDTO;
+import com.example.smartcampus.dto.ComplaintResponseDetailDTO;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.service.ComplaintService;
+import com.example.smartcampus.service.ComplaintResponseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -22,6 +24,7 @@ import java.util.Set;
 public class ComplaintController {
 
     private final ComplaintService complaintService;
+    private final ComplaintResponseService complaintResponseService;
 
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024; // 10 MB
     private static final int MAX_FILES_PER_COMPLAINT = 5;
@@ -121,5 +124,34 @@ public class ComplaintController {
             @AuthenticationPrincipal User student) {
         List<ComplaintResponseDTO> result = complaintService.getComplaintsByStudent(student);
         return ResponseEntity.ok(ApiResponse.ok("Reclamos obtenidos correctamente", result));
+    }
+
+    /**
+     * Obtener todas las respuestas a un reclamo del estudiante
+     * GET /api/complaints/{id}/responses
+     */
+    @GetMapping("/{id}/responses")
+    public ResponseEntity<ApiResponse<List<ComplaintResponseDetailDTO>>> getComplaintResponses(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User student) {
+        try {
+            // Validar que el reclamo existe y pertenece al estudiante
+            ComplaintResponseDTO complaint = complaintService.getComplaintById(id);
+            
+            if (!complaint.getStudentId().equals(student.getId())) {
+                return ResponseEntity.status(403)
+                        .body(ApiResponse.error("No tienes permiso para ver las respuestas de este reclamo."));
+            }
+
+            List<ComplaintResponseDetailDTO> responses = complaintResponseService.getResponsesByComplaintId(id);
+            return ResponseEntity.ok(ApiResponse.ok("Respuestas obtenidas correctamente", responses));
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404)
+                    .body(ApiResponse.error("Reclamo no encontrado"));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(ApiResponse.error("Error al obtener respuestas: " + e.getMessage()));
+        }
     }
 }

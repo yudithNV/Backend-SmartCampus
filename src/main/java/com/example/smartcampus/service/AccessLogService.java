@@ -49,4 +49,14 @@ public class AccessLogService {
                 ))
                 .collect(Collectors.toList());
     }
+        public void recordAdminAction(String targetEmail, String adminIp,
+                                String userAgent, String action) {
+        AccessLog log = AccessLog.builder()
+                .email(action + ":" + targetEmail)
+                .ipAddress(adminIp)
+                .userAgent(userAgent)
+                .success(true)
+                .build();
+        repository.save(log);
+        }
 }

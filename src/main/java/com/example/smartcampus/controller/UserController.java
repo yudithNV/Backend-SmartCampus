@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,13 +17,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+
 import com.example.smartcampus.dto.ApiResponse;
+import com.example.smartcampus.dto.UpdateUserStatusDTO;
 import com.example.smartcampus.dto.UserCreateDTO;
 import com.example.smartcampus.dto.UserListDTO;
 import com.example.smartcampus.dto.UserUpdateDTO;
+import com.example.smartcampus.entity.Status;
 import com.example.smartcampus.entity.User;
+import com.example.smartcampus.service.AccessLogService;
 import com.example.smartcampus.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -32,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
     private final UserService userService;
+    private final AccessLogService accessLogService;
 
     @PostMapping
     public ResponseEntity<?> createUser(@Valid @RequestBody UserCreateDTO dto) {
@@ -64,6 +71,38 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                 .body(ApiResponse.ok(e.getMessage(), null));
+        }
+    }
+    // ─── /api/users/{id}/status 
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApiResponse<UserListDTO>> updateUserStatus(
+            @PathVariable UUID id,
+            @RequestBody UpdateUserStatusDTO dto,
+            @AuthenticationPrincipal User currentUser,
+            HttpServletRequest httpRequest) {
+
+        try {
+
+            UserListDTO updated = userService.updateUserStatus(
+                    id,
+                    dto.getStatus(),
+                    currentUser.getId());
+
+            String ip = httpRequest.getHeader("X-Forwarded-For");
+            if (ip == null || ip.isBlank()) ip = httpRequest.getRemoteAddr();
+            String action = dto.getStatus() == Status.BLOQUEADO ? "BLOCKED" : "UNBLOCKED";
+            accessLogService.recordAdminAction(updated.getEmail(), ip,
+                httpRequest.getHeader("User-Agent"), action);
+
+            return ResponseEntity.ok(
+                    ApiResponse.ok(
+                            "Estado actualizado correctamente",
+                            updated));
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 

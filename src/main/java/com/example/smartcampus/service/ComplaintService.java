@@ -2,10 +2,14 @@ package com.example.smartcampus.service;
 
 import com.example.smartcampus.dto.ComplaintCreateDTO;
 import com.example.smartcampus.dto.ComplaintResponseDTO;
+import com.example.smartcampus.dto.ComplaintDetailDTO;
+import com.example.smartcampus.dto.ComplaintResponseDetailDTO;
 import com.example.smartcampus.entity.Complaint;
 import com.example.smartcampus.entity.ComplaintStatus;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.ComplaintRepository;
+import com.example.smartcampus.repository.ComplaintResponseRepository;
+import com.example.smartcampus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +27,9 @@ import java.util.stream.Collectors;
 public class ComplaintService {
 
     private final ComplaintRepository complaintRepository;
+    private final ComplaintResponseRepository complaintResponseRepository;
     private final SupabaseStorageService supabaseStorageService;
+    private final UserRepository userRepository;
     private final Random random = new Random();
 
     /**
@@ -105,6 +110,52 @@ public class ComplaintService {
     }
 
     /**
+     * Obtiene un reclamo por ID
+     */
+    public ComplaintResponseDTO getComplaintById(Long id) {
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reclamo no encontrado"));
+        return mapToDTO(complaint);
+    }
+
+    /**
+     * Obtiene todos los reclamos (para administrador)
+     */
+    public List<ComplaintResponseDTO> getAllComplaints() {
+        return complaintRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtiene un reclamo por ID con sus respuestas
+     */
+    public ComplaintDetailDTO getComplaintDetail(Long complaintId) {
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new RuntimeException("Reclamo no encontrado"));
+
+        List<ComplaintResponseDetailDTO> responses = complaintResponseRepository
+                .findByComplaintIdOrderByCreatedAtDesc(complaintId)
+                .stream()
+                .map(this::mapResponseToDTO)
+                .collect(Collectors.toList());
+
+        return mapToDetailDTO(complaint, responses);
+    }
+
+    /**
+     * Cambia el estado de un reclamo a EN_REVISION
+     */
+    public ComplaintResponseDTO updateStatusToUnderReview(Long complaintId) {
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new RuntimeException("Reclamo no encontrado"));
+
+        complaint.setStatus(ComplaintStatus.EN_REVISION);
+        return mapToDTO(complaintRepository.save(complaint));
+    }
+
+    /**
      * Genera un tracking number único en formato: REC-YYYYMMDD-XXXXX
      */
     private String generateUniqueTrackingNumber() {
@@ -120,11 +171,17 @@ public class ComplaintService {
 
     /**
      * Mapea una entidad Complaint a ComplaintResponseDTO
+     * Incluye nombre y email del estudiante
      */
     private ComplaintResponseDTO mapToDTO(Complaint complaint) {
+        User student = userRepository.findById(complaint.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        
         return ComplaintResponseDTO.builder()
                 .id(complaint.getId())
                 .studentId(complaint.getStudentId())
+                .studentName(student.getFullName())
+                .studentEmail(student.getEmail())
                 .trackingNumber(complaint.getTrackingNumber())
                 .title(complaint.getTitle())
                 .body(complaint.getBody())
@@ -133,6 +190,51 @@ public class ComplaintService {
                 .evidenceUrl(complaint.getEvidenceUrl())
                 .createdAt(complaint.getCreatedAt())
                 .updatedAt(complaint.getUpdatedAt())
+                .build();
+    }
+
+    /**
+     * Mapea una entidad Complaint a ComplaintDetailDTO con respuestas
+     * Incluye nombre y email del estudiante
+     */
+    private ComplaintDetailDTO mapToDetailDTO(Complaint complaint, List<ComplaintResponseDetailDTO> responses) {
+        User student = userRepository.findById(complaint.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        
+        return ComplaintDetailDTO.builder()
+                .id(complaint.getId())
+                .studentId(complaint.getStudentId())
+                .studentName(student.getFullName())
+                .studentEmail(student.getEmail())
+                .trackingNumber(complaint.getTrackingNumber())
+                .title(complaint.getTitle())
+                .body(complaint.getBody())
+                .category(complaint.getCategory())
+                .status(complaint.getStatus())
+                .evidenceUrl(complaint.getEvidenceUrl())
+                .createdAt(complaint.getCreatedAt())
+                .updatedAt(complaint.getUpdatedAt())
+                .responses(responses)
+                .build();
+    }
+
+    /**
+     * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO
+     * Incluye nombre y email del admin
+     */
+    private ComplaintResponseDetailDTO mapResponseToDTO(com.example.smartcampus.entity.ComplaintResponse response) {
+        User admin = userRepository.findById(response.getAdminId())
+                .orElseThrow(() -> new RuntimeException("Admin no encontrado"));
+        
+        return ComplaintResponseDetailDTO.builder()
+                .id(response.getId())
+                .complaintId(response.getComplaintId())
+                .adminId(response.getAdminId())
+                .adminName(admin.getFullName())
+                .adminEmail(admin.getEmail())
+                .body(response.getBody())
+                .isClosing(response.getIsClosing())
+                .createdAt(response.getCreatedAt())
                 .build();
     }
 }

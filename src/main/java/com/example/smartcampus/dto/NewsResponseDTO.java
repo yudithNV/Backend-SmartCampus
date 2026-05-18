@@ -26,4 +26,6 @@ public class NewsResponseDTO {
     private OffsetDateTime scheduledAt;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private Boolean isFavorite;
+
 }
