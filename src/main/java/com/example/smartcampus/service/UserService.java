@@ -188,4 +188,29 @@ public class UserService {
             ))
             .orElse(null);
     }
+    // ─── Cambiar estado (ACTIVO / INACTIVO / BLOQUEADO) 
+    public UserListDTO updateUserStatus(UUID id, Status newStatus, UUID requestingAdminId) {
+
+        if (id.equals(requestingAdminId)) {
+            throw new RuntimeException("No puedes cambiar el estado de tu propia cuenta");
+        }
+
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        user.setStatus(newStatus);
+        user.setUpdatedAt(OffsetDateTime.now());
+        User saved = userRepository.save(user);
+
+        UserListDTO.CareerInfo careerInfo = getCareerInfo(saved);
+        return new UserListDTO(
+            saved.getId(),
+            saved.getFullName(),
+            saved.getEmail(),
+            saved.getRole().name(),
+            careerInfo,
+            saved.getStatus().name(),
+            saved.getCreatedAt().toString()
+        );
+    }
 }
