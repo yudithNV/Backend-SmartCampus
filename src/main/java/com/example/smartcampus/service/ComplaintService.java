@@ -171,11 +171,17 @@ public class ComplaintService {
 
     /**
      * Mapea una entidad Complaint a ComplaintResponseDTO
+     * Incluye nombre y email del estudiante
      */
     private ComplaintResponseDTO mapToDTO(Complaint complaint) {
+        User student = userRepository.findById(complaint.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        
         return ComplaintResponseDTO.builder()
                 .id(complaint.getId())
                 .studentId(complaint.getStudentId())
+                .studentName(student.getFullName())
+                .studentEmail(student.getEmail())
                 .trackingNumber(complaint.getTrackingNumber())
                 .title(complaint.getTitle())
                 .body(complaint.getBody())
@@ -189,11 +195,17 @@ public class ComplaintService {
 
     /**
      * Mapea una entidad Complaint a ComplaintDetailDTO con respuestas
+     * Incluye nombre y email del estudiante
      */
     private ComplaintDetailDTO mapToDetailDTO(Complaint complaint, List<ComplaintResponseDetailDTO> responses) {
+        User student = userRepository.findById(complaint.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        
         return ComplaintDetailDTO.builder()
                 .id(complaint.getId())
                 .studentId(complaint.getStudentId())
+                .studentName(student.getFullName())
+                .studentEmail(student.getEmail())
                 .trackingNumber(complaint.getTrackingNumber())
                 .title(complaint.getTitle())
                 .body(complaint.getBody())
@@ -208,6 +220,7 @@ public class ComplaintService {
 
     /**
      * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO
+     * Incluye nombre y email del admin
      */
     private ComplaintResponseDetailDTO mapResponseToDTO(com.example.smartcampus.entity.ComplaintResponse response) {
         User admin = userRepository.findById(response.getAdminId())
@@ -218,6 +231,7 @@ public class ComplaintService {
                 .complaintId(response.getComplaintId())
                 .adminId(response.getAdminId())
                 .adminName(admin.getFullName())
+                .adminEmail(admin.getEmail())
                 .body(response.getBody())
                 .isClosing(response.getIsClosing())
                 .createdAt(response.getCreatedAt())

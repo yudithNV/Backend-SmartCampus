@@ -50,7 +50,7 @@ public class ComplaintResponseService {
         complaint.setStatus(ComplaintStatus.RESUELTO);
         complaintRepository.save(complaint);
 
-        return mapToDTO(saved, admin.getFullName());
+        return mapToDTO(saved, admin.getFullName(), admin.getEmail());
     }
 
     /**
@@ -75,6 +75,7 @@ public class ComplaintResponseService {
                 .complaintId(response.getComplaintId())
                 .adminId(response.getAdminId())
                 .adminName(admin.getFullName())
+                .adminEmail(admin.getEmail())
                 .body(response.getBody())
                 .isClosing(response.getIsClosing())
                 .createdAt(response.getCreatedAt())
@@ -82,14 +83,15 @@ public class ComplaintResponseService {
     }
 
     /**
-     * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO (versión optimizada con nombre pasado)
+     * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO (versión optimizada con datos pasados)
      */
-    private ComplaintResponseDetailDTO mapToDTO(ComplaintResponse response, String adminName) {
+    private ComplaintResponseDetailDTO mapToDTO(ComplaintResponse response, String adminName, String adminEmail) {
         return ComplaintResponseDetailDTO.builder()
                 .id(response.getId())
                 .complaintId(response.getComplaintId())
                 .adminId(response.getAdminId())
                 .adminName(adminName)
+                .adminEmail(adminEmail)
                 .body(response.getBody())
                 .isClosing(response.getIsClosing())
                 .createdAt(response.getCreatedAt())

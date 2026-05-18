@@ -18,6 +18,7 @@ public class ComplaintResponseDetailDTO {
     private Long complaintId;
     private UUID adminId;
     private String adminName;
+    private String adminEmail;
     private String body;
     private Boolean isClosing;
     private OffsetDateTime createdAt;
