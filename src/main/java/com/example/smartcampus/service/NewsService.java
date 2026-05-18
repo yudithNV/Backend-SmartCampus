@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.Objects; 
+import com.example.smartcampus.repository.FavoriteNewsRepository;
+
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +37,8 @@ public class NewsService {
 
     private final NewsRepository newsRepository;
     private final UserRepository userRepository;
-    private final CareerRepository careerRepository;    
+    private final CareerRepository careerRepository;  
+    private final FavoriteNewsRepository favoriteNewsRepository;  
     private static final long MIN_SCHEDULED_MINUTES = 5;
 
 
@@ -212,24 +215,25 @@ public class NewsService {
     }
 
     private NewsResponseDTO toDTO(News n, String authorName, String careerName) {
-        return new NewsResponseDTO(
-                n.getId(),
-                n.getTitle(),
-                n.getBody(),
-                n.getCategory(),
-                n.getCoverUrl(),
-                n.getAttachmentUrl(),
-                n.getCareerId(),
-                careerName, 
-                n.getAuthorId(),
-                authorName,
-                n.getPublished(),
-                n.getNewsStatus(),       
-                n.getScheduledAt(),
-                n.getCreatedAt(),
-                n.getUpdatedAt()
-        );
-    }
+    return new NewsResponseDTO(
+            n.getId(),
+            n.getTitle(),
+            n.getBody(),
+            n.getCategory(),
+            n.getCoverUrl(),
+            n.getAttachmentUrl(),
+            n.getCareerId(),
+            careerName,
+            n.getAuthorId(),
+            authorName,
+            n.getPublished(),
+            n.getNewsStatus(),
+            n.getScheduledAt(),
+            n.getCreatedAt(),
+            n.getUpdatedAt(),
+            false 
+    );
+}
 
      private NewsResponseDTO toDTO(News n) {
         String authorName = "Publicador";
@@ -245,4 +249,23 @@ public class NewsService {
                 : null;
         return toDTO(n, authorName, careerName);
     }
+    public Page<NewsResponseDTO> enrichWithFavorites(Page<NewsResponseDTO> page, UUID userId) {
+
+    if (userId == null) {
+        return page;
+    }
+
+    List<Long> ids = page.getContent().stream()
+            .map(NewsResponseDTO::getId)
+            .toList();
+
+    Set<Long> favoriteIds = favoriteNewsRepository
+            .findFavoriteNewsIdsByUserIdAndNewsIdIn(userId, ids);
+
+    page.getContent().forEach(dto ->
+            dto.setIsFavorite(favoriteIds.contains(dto.getId()))
+    );
+
+    return page;
+}
 }

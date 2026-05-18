@@ -1,5 +1,6 @@
 package com.example.smartcampus.repository;
 
+import com.example.smartcampus.entity.FavoriteNews;
 import com.example.smartcampus.entity.News;
 import com.example.smartcampus.entity.NewsCategory;
 import org.springframework.data.domain.Pageable;
@@ -8,10 +9,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface NewsRepository extends JpaRepository<News, Long> {
 
@@ -51,5 +56,20 @@ public interface NewsRepository extends JpaRepository<News, Long> {
             @Param("careerId") Integer careerId,
             @Param("category") String category,
             Pageable pageable);
+
+    @Repository
+    public interface FavoriteNewsRepository extends JpaRepository<FavoriteNews, Long> {
+
+        @Query("""
+            SELECT f.news.id
+            FROM FavoriteNews f
+            WHERE f.user.id = :userId
+            AND f.news.id IN :newsIds
+        """)
+        Set<Long> findFavoriteNewsIdsByUserIdAndNewsIdIn(
+                @Param("userId") UUID userId,
+                @Param("newsIds") List<Long> newsIds
+        );
+    }
 }
  

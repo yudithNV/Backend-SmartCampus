@@ -67,18 +67,25 @@ public class NewsController {
     }
 
     // Feed con filtros
-    @GetMapping("/recent")
-    public ResponseEntity<Page<NewsResponseDTO>> getRecentNews(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String careerName,   
-            @RequestParam(required = false) NewsCategory category,
-            @RequestParam(defaultValue = "0")  int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "DESC")      String sortType) {
+        @GetMapping("/recent")
+        public ResponseEntity<Page<NewsResponseDTO>> getRecentNews(
+                @RequestParam(required = false) String search,
+                @RequestParam(required = false) String careerName,
+                @RequestParam(required = false) NewsCategory category,
+                @RequestParam(defaultValue = "0")  int page,
+                @RequestParam(defaultValue = "10") int size,
+                @RequestParam(defaultValue = "createdAt") String sortBy,
+                @RequestParam(defaultValue = "DESC")      String sortType,
+                @AuthenticationPrincipal User user) {
 
-        return ResponseEntity.ok(
-                newsService.getRecentNews(search, careerName, category, page, size, sortBy, sortType)
-        );
-    }
+            Page<NewsResponseDTO> result = newsService
+                    .getRecentNews(search, careerName, category, page, size, sortBy, sortType);
+
+            // Enriquecer con favoritos si el usuario está autenticado
+            if (user != null) {
+                newsService.enrichWithFavorites(result, user.getId());
+            }
+
+            return ResponseEntity.ok(result);
+        }
 }
