@@ -8,6 +8,7 @@ import com.example.smartcampus.entity.ComplaintStatus;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.ComplaintRepository;
 import com.example.smartcampus.repository.ComplaintResponseRepository;
+import com.example.smartcampus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,7 @@ public class ComplaintResponseService {
 
     private final ComplaintResponseRepository complaintResponseRepository;
     private final ComplaintRepository complaintRepository;
+    private final UserRepository userRepository;
 
     /**
      * Crea una respuesta a un reclamo y automáticamente lo marca como RESUELTO
@@ -48,7 +50,7 @@ public class ComplaintResponseService {
         complaint.setStatus(ComplaintStatus.RESUELTO);
         complaintRepository.save(complaint);
 
-        return mapToDTO(saved);
+        return mapToDTO(saved, admin.getFullName(), admin.getEmail());
     }
 
     /**
@@ -62,13 +64,34 @@ public class ComplaintResponseService {
     }
 
     /**
-     * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO
+     * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO (con lookup del admin)
      */
     private ComplaintResponseDetailDTO mapToDTO(ComplaintResponse response) {
+        User admin = userRepository.findById(response.getAdminId())
+                .orElseThrow(() -> new RuntimeException("Admin no encontrado"));
+        
         return ComplaintResponseDetailDTO.builder()
                 .id(response.getId())
                 .complaintId(response.getComplaintId())
                 .adminId(response.getAdminId())
+                .adminName(admin.getFullName())
+                .adminEmail(admin.getEmail())
+                .body(response.getBody())
+                .isClosing(response.getIsClosing())
+                .createdAt(response.getCreatedAt())
+                .build();
+    }
+
+    /**
+     * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO (versión optimizada con datos pasados)
+     */
+    private ComplaintResponseDetailDTO mapToDTO(ComplaintResponse response, String adminName, String adminEmail) {
+        return ComplaintResponseDetailDTO.builder()
+                .id(response.getId())
+                .complaintId(response.getComplaintId())
+                .adminId(response.getAdminId())
+                .adminName(adminName)
+                .adminEmail(adminEmail)
                 .body(response.getBody())
                 .isClosing(response.getIsClosing())
                 .createdAt(response.getCreatedAt())

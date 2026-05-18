@@ -18,6 +18,8 @@ public class ComplaintResponseDTO {
 
     private Long id;
     private UUID studentId;
+    private String studentName;
+    private String studentEmail;
     private String trackingNumber;
     private String title;
     private String body;

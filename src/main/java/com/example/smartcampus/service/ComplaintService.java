@@ -9,6 +9,7 @@ import com.example.smartcampus.entity.ComplaintStatus;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.ComplaintRepository;
 import com.example.smartcampus.repository.ComplaintResponseRepository;
+import com.example.smartcampus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +29,7 @@ public class ComplaintService {
     private final ComplaintRepository complaintRepository;
     private final ComplaintResponseRepository complaintResponseRepository;
     private final SupabaseStorageService supabaseStorageService;
+    private final UserRepository userRepository;
     private final Random random = new Random();
 
     /**
@@ -108,6 +110,15 @@ public class ComplaintService {
     }
 
     /**
+     * Obtiene un reclamo por ID
+     */
+    public ComplaintResponseDTO getComplaintById(Long id) {
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Reclamo no encontrado"));
+        return mapToDTO(complaint);
+    }
+
+    /**
      * Obtiene todos los reclamos (para administrador)
      */
     public List<ComplaintResponseDTO> getAllComplaints() {
@@ -160,11 +171,17 @@ public class ComplaintService {
 
     /**
      * Mapea una entidad Complaint a ComplaintResponseDTO
+     * Incluye nombre y email del estudiante
      */
     private ComplaintResponseDTO mapToDTO(Complaint complaint) {
+        User student = userRepository.findById(complaint.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        
         return ComplaintResponseDTO.builder()
                 .id(complaint.getId())
                 .studentId(complaint.getStudentId())
+                .studentName(student.getFullName())
+                .studentEmail(student.getEmail())
                 .trackingNumber(complaint.getTrackingNumber())
                 .title(complaint.getTitle())
                 .body(complaint.getBody())
@@ -178,11 +195,17 @@ public class ComplaintService {
 
     /**
      * Mapea una entidad Complaint a ComplaintDetailDTO con respuestas
+     * Incluye nombre y email del estudiante
      */
     private ComplaintDetailDTO mapToDetailDTO(Complaint complaint, List<ComplaintResponseDetailDTO> responses) {
+        User student = userRepository.findById(complaint.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        
         return ComplaintDetailDTO.builder()
                 .id(complaint.getId())
                 .studentId(complaint.getStudentId())
+                .studentName(student.getFullName())
+                .studentEmail(student.getEmail())
                 .trackingNumber(complaint.getTrackingNumber())
                 .title(complaint.getTitle())
                 .body(complaint.getBody())
@@ -197,12 +220,18 @@ public class ComplaintService {
 
     /**
      * Mapea una entidad ComplaintResponse a ComplaintResponseDetailDTO
+     * Incluye nombre y email del admin
      */
     private ComplaintResponseDetailDTO mapResponseToDTO(com.example.smartcampus.entity.ComplaintResponse response) {
+        User admin = userRepository.findById(response.getAdminId())
+                .orElseThrow(() -> new RuntimeException("Admin no encontrado"));
+        
         return ComplaintResponseDetailDTO.builder()
                 .id(response.getId())
                 .complaintId(response.getComplaintId())
                 .adminId(response.getAdminId())
+                .adminName(admin.getFullName())
+                .adminEmail(admin.getEmail())
                 .body(response.getBody())
                 .isClosing(response.getIsClosing())
                 .createdAt(response.getCreatedAt())
