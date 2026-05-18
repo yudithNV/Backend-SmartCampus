@@ -110,6 +110,9 @@ public class SecurityConfig {
                 // Dashboard — admin
                 .requestMatchers(HttpMethod.GET, "/api/dashboard/admin").hasRole("ADMINISTRADOR")
 
+                // Chatbot
+                .requestMatchers("/api/chatbot/**").hasRole("ESTUDIANTE")
+
                 // Categorías
                 .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
 
