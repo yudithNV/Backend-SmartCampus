@@ -1,18 +1,40 @@
 package com.example.smartcampus.service;
 
-import com.example.smartcampus.dto.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
+import com.example.smartcampus.dto.AccessLogMetricsDTO;
+import com.example.smartcampus.dto.AdminDashboardDTO;
+import com.example.smartcampus.dto.ComplaintByCategoryDTO;
+import com.example.smartcampus.dto.ComplaintMetricsDTO;
+import com.example.smartcampus.dto.EventByCategory;
+import com.example.smartcampus.dto.EventMetricsDTO;
+import com.example.smartcampus.dto.EventRegistrationByCategory;
+import com.example.smartcampus.dto.EventRegistrationMetricsDTO;
+import com.example.smartcampus.dto.NewsByCategory;
+import com.example.smartcampus.dto.NewsMetricsDTO;
+import com.example.smartcampus.dto.SuggestionByCategory;
+import com.example.smartcampus.dto.SuggestionMetricsDTO;
+import com.example.smartcampus.dto.SuspiciousEmailDTO;
+import com.example.smartcampus.dto.UserByCareerDTO;
+import com.example.smartcampus.dto.UserMetricsDTO;
 import com.example.smartcampus.entity.ComplaintStatus;
 import com.example.smartcampus.entity.Role;
 import com.example.smartcampus.entity.Status;
 import com.example.smartcampus.repository.AccessLogRepository;
 import com.example.smartcampus.repository.CareerRepository;
 import com.example.smartcampus.repository.ComplaintRepository;
+import com.example.smartcampus.repository.EventRegistrationRepository;
+import com.example.smartcampus.repository.EventRepository;
+import com.example.smartcampus.repository.NewsRepository;
+import com.example.smartcampus.repository.SuggestionRepository;
 import com.example.smartcampus.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +44,10 @@ public class AdminDashboardService {
     private final ComplaintRepository complaintRepository;
     private final AccessLogRepository accessLogRepository;
     private final CareerRepository careerRepository;
+    private final SuggestionRepository suggestionRepository;
+    private final EventRepository eventRepository;
+    private final EventRegistrationRepository eventRegistrationRepository;
+    private final NewsRepository newsRepository;
 
     /**
      * Obtiene todas las métricas para el dashboard del administrador
@@ -32,6 +58,14 @@ public class AdminDashboardService {
                 .users(getUserMetrics())
                 .complaints(getComplaintMetrics())
                 .accessLogs(getAccessLogMetrics())
+                .suggestions(getSuggestionMetrics())
+                .eventRegistrations(getEventRegistrationMetrics())
+                .events(getEventMetrics())
+                .news(getNewsMetrics())
+                .totalSuggestions(suggestionRepository.countAllSuggestions())
+                .publishedEvents(eventRepository.countPublishedEvents())
+                .totalEventRegistrations(eventRegistrationRepository.countAllEventRegistrations())
+                .publishedNews(newsRepository.countPublishedNews())
                 .build();
     }
 
@@ -68,7 +102,7 @@ public class AdminDashboardService {
         // Por carrera (Query agregada con JOIN)
         List<UserByCareerDTO> byCareer = userRepository.countUsersByCareer().stream()
                 .map(row -> UserByCareerDTO.builder()
-                        .careerId((Integer) row[0])
+                        .careerId(((Number) row[0]).intValue())
                         .careerName((String) row[1])
                         .total((Long) row[2])
                         .build())
@@ -138,6 +172,96 @@ public class AdminDashboardService {
                 .successfulAttempts(successfulAttempts)
                 .failedAttempts(failedAttempts)
                 .suspiciousEmails(suspiciousEmails)
+                .build();
+    }
+
+    /**
+     * Calcula métricas de sugerencias usando queries agregadas en BD
+     * Optimizado: 1 query COUNT y 1 GROUP BY en lugar de traer toda la tabla
+     */
+    private SuggestionMetricsDTO getSuggestionMetrics() {
+        // Total sugerencias (Query agregada)
+        long total = suggestionRepository.countAllSuggestions();
+
+        // Por categoría (Query agregada)
+        List<SuggestionByCategory> byCategory = suggestionRepository.countSuggestionsByCategory().stream()
+                .map(row -> SuggestionByCategory.builder()
+                        .category((String) row[0])
+                        .total((Long) row[1])
+                        .build())
+                .collect(Collectors.toList());
+
+        return SuggestionMetricsDTO.builder()
+                .total(total)
+                .byCategory(byCategory)
+                .build();
+    }
+
+    /**
+     * Calcula métricas de registros de eventos usando queries agregadas en BD
+     * Optimizado: 1 query COUNT y 1 GROUP BY con JOIN en lugar de traer toda la tabla
+     */
+    private EventRegistrationMetricsDTO getEventRegistrationMetrics() {
+        // Total registros (Query agregada)
+        long total = eventRegistrationRepository.countAllEventRegistrations();
+
+        // Por categoría (Query agregada con JOIN)
+        List<EventRegistrationByCategory> byCategory = eventRegistrationRepository.countEventRegistrationsByCategory().stream()
+                .map(row -> EventRegistrationByCategory.builder()
+                        .categoryId(((Number) row[0]).intValue())
+                        .categoryName((String) row[1])
+                        .totalRegistrations((Long) row[2])
+                        .build())
+                .collect(Collectors.toList());
+
+        return EventRegistrationMetricsDTO.builder()
+                .total(total)
+                .byCategory(byCategory)
+                .build();
+    }
+
+    /**
+     * Calcula métricas de eventos publicados usando queries agregadas en BD
+     * Optimizado: 1 query COUNT y 1 GROUP BY con JOIN en lugar de traer toda la tabla
+     */
+    private EventMetricsDTO getEventMetrics() {
+        // Total eventos (Query agregada)
+        long total = eventRepository.countPublishedEvents();
+
+        // Por categoría (Query agregada con JOIN)
+        List<EventByCategory> byCategory = eventRepository.countEventsByCategory().stream()
+                .map(row -> EventByCategory.builder()
+                        .categoryId(((Number) row[0]).intValue())
+                        .categoryName((String) row[1])
+                        .totalEvents((Long) row[2])
+                        .build())
+                .collect(Collectors.toList());
+
+        return EventMetricsDTO.builder()
+                .total(total)
+                .byCategory(byCategory)
+                .build();
+    }
+
+    /**
+     * Calcula métricas de noticias publicadas usando queries agregadas en BD
+     * Optimizado: 1 query COUNT y 1 GROUP BY en lugar de traer toda la tabla
+     */
+    private NewsMetricsDTO getNewsMetrics() {
+        // Total noticias (Query agregada)
+        long total = newsRepository.countPublishedNews();
+
+        // Por categoría (Query agregada)
+        List<NewsByCategory> byCategory = newsRepository.countNewsByCategory().stream()
+                .map(row -> NewsByCategory.builder()
+                        .category((String) row[0])
+                        .totalNews((Long) row[1])
+                        .build())
+                .collect(Collectors.toList());
+
+        return NewsMetricsDTO.builder()
+                .total(total)
+                .byCategory(byCategory)
                 .build();
     }
 }

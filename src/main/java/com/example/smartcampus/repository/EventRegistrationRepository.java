@@ -92,4 +92,16 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
             @Param("careerId") Integer careerId,
             @Param("categoryId") Integer categoryId
     );
+
+    // Contar total de registros en eventos
+    @Query("SELECT COUNT(er) FROM EventRegistration er")
+    long countAllEventRegistrations();
+
+    // Contar registros de eventos agrupados por categoría
+    @Query("SELECT c.id, c.name, COUNT(er) FROM EventRegistration er " +
+           "JOIN Event e ON er.eventId = e.id " +
+           "JOIN Category c ON e.categoryId = c.id " +
+           "GROUP BY c.id, c.name " +
+           "ORDER BY COUNT(er) DESC")
+    List<Object[]> countEventRegistrationsByCategory();
 }

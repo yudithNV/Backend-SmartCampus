@@ -1,31 +1,29 @@
 package com.example.smartcampus.repository;
 
-import com.example.smartcampus.entity.FavoriteNews;
-import com.example.smartcampus.entity.News;
-import com.example.smartcampus.entity.NewsCategory;
-import org.springframework.data.domain.Pageable;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import com.example.smartcampus.entity.News;
 
+@Repository
 public interface NewsRepository extends JpaRepository<News, Long> {
 
     // Noticias publicadas
-  List<News> findAllByNewsStatusOrderByCreatedAtDesc(com.example.smartcampus.entity.NewsStatus newsStatus);
+    List<News> findAllByNewsStatusOrderByCreatedAtDesc(com.example.smartcampus.entity.NewsStatus newsStatus);
+    
     // Noticias de un autor
     List<News> findAllByAuthorIdOrderByCreatedAtDesc(UUID authorId);
 
-     @Query("SELECT n FROM News n " +
+    @Query("SELECT n FROM News n " +
            "WHERE n.newsStatus = 'PROGRAMADO' " +
            "AND n.scheduledAt <= :now")
     List<News> findDueScheduledNews(@Param("now") OffsetDateTime now);
@@ -57,19 +55,15 @@ public interface NewsRepository extends JpaRepository<News, Long> {
             @Param("category") String category,
             Pageable pageable);
 
-    @Repository
-    public interface FavoriteNewsRepository extends JpaRepository<FavoriteNews, Long> {
+    // Contar noticias publicadas (PUBLICADO status)
+    @Query("SELECT COUNT(n) FROM News n WHERE n.newsStatus = 'PUBLICADO'")
+    long countPublishedNews();
 
-        @Query("""
-            SELECT f.news.id
-            FROM FavoriteNews f
-            WHERE f.user.id = :userId
-            AND f.news.id IN :newsIds
-        """)
-        Set<Long> findFavoriteNewsIdsByUserIdAndNewsIdIn(
-                @Param("userId") UUID userId,
-                @Param("newsIds") List<Long> newsIds
-        );
-    }
+    // Contar noticias agrupadas por categoría (solo PUBLICADO)
+    @Query("SELECT CAST(n.category AS string), COUNT(n) FROM News n " +
+           "WHERE n.newsStatus = 'PUBLICADO' " +
+           "GROUP BY n.category " +
+           "ORDER BY COUNT(n) DESC")
+    List<Object[]> countNewsByCategory();
 }
  
