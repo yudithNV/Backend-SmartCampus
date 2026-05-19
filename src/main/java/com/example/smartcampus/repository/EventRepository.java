@@ -150,4 +150,16 @@ public interface EventRepository extends JpaRepository<Event, Long> {
             @Param("careerId") Integer careerId,
             @Param("categoryId") Integer categoryId
     );
+
+    // Contar eventos publicados (isActive = true)
+    @Query("SELECT COUNT(e) FROM Event e WHERE e.isActive = true")
+    long countPublishedEvents();
+
+    // Contar eventos agrupados por categoría
+    @Query("SELECT c.id, c.name, COUNT(e) FROM Event e " +
+           "JOIN Category c ON e.categoryId = c.id " +
+           "WHERE e.isActive = true " +
+           "GROUP BY c.id, c.name " +
+           "ORDER BY COUNT(e) DESC")
+    List<Object[]> countEventsByCategory();
 }
