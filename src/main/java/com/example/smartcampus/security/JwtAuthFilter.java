@@ -30,6 +30,7 @@ protected void doFilterInternal(HttpServletRequest request,
         throws ServletException, IOException {
 
     String authHeader = request.getHeader("Authorization");
+    System.out.println(">>> AUTH HEADER: " + authHeader); // <-- log temporal
 
     if (authHeader == null || !authHeader.startsWith("Bearer ")) {
         filterChain.doFilter(request, response);
@@ -40,27 +41,28 @@ protected void doFilterInternal(HttpServletRequest request,
 
     try {
         String email = jwtService.extractEmail(token);
+        System.out.println(">>> EMAIL EXTRAÍDO: " + email); // <-- log temporal
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-            if (user.getStatus() != com.example.smartcampus.entity.Status.ACTIVO) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write(
-                    "{\"status\":401,\"error\":\"Cuenta bloqueada\"," +
-                    "\"message\":\"Tu cuenta ha sido bloqueada. Contacta al administrador.\"}"
-                );
-                return;  
-            }
+            System.out.println(">>> ROL DEL USUARIO: " + user.getRole()); // <-- log temporal
 
             UsernamePasswordAuthenticationToken auth =
                     new UsernamePasswordAuthenticationToken(
-                            user, null, user.getAuthorities());
+                            user,
+                            null,
+                            user.getAuthorities()
+                    );
             SecurityContextHolder.getContext().setAuthentication(auth);
+            System.out.println(">>> AUTENTICACIÓN SETEADA OK"); 
         }
     } catch (Exception e) {
+        System.out.println(">>> ERROR EN FILTRO JWT: " + e.getMessage());
+        System.out.println(">>> Continuando sin autenticación para endpoints públicos...");
+        // NO devolvemos 401 automáticamente - dejamos que Spring Security decida
+        // basado en la configuración de SecurityConfig si el endpoint requiere auth o no
     }
 
     filterChain.doFilter(request, response);
