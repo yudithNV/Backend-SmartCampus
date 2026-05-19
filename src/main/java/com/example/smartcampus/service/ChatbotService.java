@@ -37,12 +37,11 @@ public class ChatbotService {
     private static final String GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions";
     private static final String GROQ_MODEL = "llama-3.1-8b-instant";
 
-    private static final String ESCALATION_SENTINEL = "__ESCALAR__";
-
+    private static final String ESCALATION_SENTINEL = "ESCALAR";
     private static final String ESCALATION_MESSAGE =
             "Lo siento, no tengo información suficiente para responder esa pregunta. " +
-            "¿Te gustaría que te conecte con un miembro del equipo de soporte de la UCB? " +
-            "Puedes escribirnos a soporte@ucb.edu.bo o acercarte a la oficina de Bienestar Estudiantil.";
+            "Te recomiendo revisar el Muro de Noticias en SmartCampus o contactar " +
+            "directamente con soporte de la UCB.";
 
     // ─────────────────────────────────────────────────────────────────────────
     // Método principal
@@ -59,8 +58,30 @@ public class ChatbotService {
             rawAnswer = ESCALATION_SENTINEL;
         }
 
-        boolean escalated = rawAnswer.contains(ESCALATION_SENTINEL);
-        String finalAnswer = escalated ? ESCALATION_MESSAGE : rawAnswer.trim();
+String normalized = rawAnswer == null
+        ? ""
+        : rawAnswer.toLowerCase();
+
+boolean escalated =
+        normalized.contains("escalar")
+        || normalized.contains("no tengo información")
+        || normalized.contains("no tengo acceso")
+        || normalized.contains("no dispongo de información")
+        || normalized.contains("no puedo confirmar")
+        || normalized.contains("no cuento con información")
+        || normalized.contains("consulta soporte")
+        || normalized.contains("contactar con soporte");
+
+String cleanedAnswer = rawAnswer == null
+        ? ""
+        : rawAnswer
+            .replace("ESCALAR", "")
+            .replace("__ESCALAR__", "")
+            .trim();
+
+String finalAnswer = escalated
+        ? ESCALATION_MESSAGE
+        : cleanedAnswer;
 
         ChatbotHistory history = ChatbotHistory.builder()
                 .user(student)
@@ -185,8 +206,8 @@ public class ChatbotService {
                 1. Responde SIEMPRE en español, de forma amable y concisa (máximo 2 párrafos).
                 2. Responde preguntas sobre SmartCampus: eventos, noticias, sugerencias, \
                    reclamos, perfil y calendario.
-                3. Si la pregunta no tiene NINGUNA relación con SmartCampus o la UCB, \
-                   responde ÚNICAMENTE con el texto exacto: __ESCALAR__
+                3. Si la pregunta no tiene relación con SmartCampus, la UCB o no tienes suficiente \
+                información para responder con seguridad, responde ÚNICAMENTE con: ESCALAR
                 4. No inventes información que no esté en este contexto.
                 """;
     }
