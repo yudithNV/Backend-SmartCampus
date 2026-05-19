@@ -2,6 +2,7 @@ package com.example.smartcampus.repository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,6 +20,9 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
 
     // Buscar registros por evento
     List<EventRegistration> findByEventId(Long eventId);
+
+    // Buscar registro por evento y estudiante (retorna Optional)
+    Optional<EventRegistration> findByEventIdAndStudentId(Long eventId, UUID studentId);
 
     // Contar registros por evento
     long countByEventId(Long eventId);

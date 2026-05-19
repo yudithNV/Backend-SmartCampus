@@ -38,4 +38,7 @@ public class EventResponseDTO {
     private Boolean recommended;
     private Long registeredCount;
     private Boolean isRegistered;
+    
+    @Builder.Default
+    private Boolean reminderScheduled = null;
 }

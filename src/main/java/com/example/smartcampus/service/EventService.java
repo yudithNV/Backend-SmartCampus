@@ -33,6 +33,7 @@ import com.example.smartcampus.repository.EventRegistrationRepository;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
 import com.example.smartcampus.repository.UserRepository;
+import com.example.smartcampus.service.ReminderService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,6 +48,7 @@ public class EventService {
     private final CareerRepository careerRepository;
     private final CategoryRepository categoryRepository;
     private final UserPreferencesService preferencesService;
+    private final ReminderService reminderService;
 
     // ─── CREATE ───────────────────────────────────────────────────────────────
 
@@ -421,14 +423,33 @@ public class EventService {
                 .studentId(student.getId())
                 .build();
 
-        eventRegistrationRepository.save(registration);
-        return mapToDTO(event, student.getId());
+        EventRegistration saved = eventRegistrationRepository.save(registration);
+
+        // ── HU: Programar recordatorio UN_DIA antes ──────────────────────────
+        boolean scheduled = reminderService.scheduleReminder(
+                saved.getId(),
+                eventId,
+                student.getId(),
+                event.getName(),
+                event.getStartDatetime()
+        );
+        // El boolean 'scheduled' lo retornamos en el DTO para que el frontend muestre el popup
+        EventResponseDTO dto = mapToDTO(event, student.getId());
+        dto.setReminderScheduled(scheduled);
+        return dto;
     }
 
     @Transactional
     public EventResponseDTO unregisterStudent(Long eventId, User student) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        // Buscar la inscripción antes de borrarla para obtener su ID
+        eventRegistrationRepository.findByEventIdAndStudentId(eventId, student.getId())
+                .ifPresent(registration -> {
+                    // ── HU: Eliminar recordatorio pendiente ──────────────────
+                    reminderService.cancelReminder(registration.getId());
+                });
 
         long deleted = eventRegistrationRepository.deleteByEventIdAndStudentId(eventId, student.getId());
         if (deleted == 0) {
