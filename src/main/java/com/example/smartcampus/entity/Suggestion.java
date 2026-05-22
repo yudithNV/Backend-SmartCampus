@@ -2,11 +2,13 @@ package com.example.smartcampus.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Type;
-import com.example.smartcampus.converter.PostgreSQLEnumType;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
 
 @Entity
 @Table(name = "suggestions")
@@ -21,7 +23,8 @@ public class Suggestion {
     private UUID studentId;
 
     @Column(name = "category", nullable = false)
-    @Type(value = PostgreSQLEnumType.class)
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private SuggestionCategory category;
 
     @Column(name = "body", nullable = false, columnDefinition = "TEXT")
