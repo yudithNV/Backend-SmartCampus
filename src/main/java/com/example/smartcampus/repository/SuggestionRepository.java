@@ -27,4 +27,8 @@ public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
     // Retorna [category_name, count]
     @Query(value = "SELECT s.category::text, COUNT(*) FROM suggestions s GROUP BY s.category ORDER BY COUNT(*) DESC", nativeQuery = true)
     List<Object[]> countSuggestionsByCategory();
+
+    // Admin: todas las sugerencias con datos del estudiante
+    @Query("SELECT s, u FROM Suggestion s JOIN User u ON s.studentId = u.id ORDER BY s.createdAt DESC")
+    List<Object[]> findAllWithStudent();
 }

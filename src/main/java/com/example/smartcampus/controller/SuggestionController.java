@@ -1,5 +1,6 @@
 package com.example.smartcampus.controller;
 
+import com.example.smartcampus.dto.AdminSuggestionResponseDTO;
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.SuggestionRequestDTO;
 import com.example.smartcampus.dto.SuggestionResponseDTO;
@@ -8,6 +9,7 @@ import com.example.smartcampus.service.SuggestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -49,5 +51,13 @@ public class SuggestionController {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.ok(e.getMessage(), null));
         }
+    }
+
+    // GET /api/suggestions/admin — solo administradores
+    @GetMapping("/admin")
+    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse<List<AdminSuggestionResponseDTO>>> getAllForAdmin() {
+        List<AdminSuggestionResponseDTO> result = service.getAllForAdmin();
+        return ResponseEntity.ok(ApiResponse.ok("Sugerencias obtenidas correctamente", result));
     }
 }

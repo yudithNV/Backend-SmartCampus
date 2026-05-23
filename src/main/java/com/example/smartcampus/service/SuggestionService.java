@@ -1,5 +1,6 @@
 package com.example.smartcampus.service;
 
+import com.example.smartcampus.dto.AdminSuggestionResponseDTO;
 import com.example.smartcampus.dto.SuggestionRequestDTO;
 import com.example.smartcampus.dto.SuggestionResponseDTO;
 import com.example.smartcampus.entity.Suggestion;
@@ -49,6 +50,24 @@ public class SuggestionService {
         Suggestion suggestion = repository.findByIdAndStudentId(id, user.getId())
                 .orElseThrow(() -> new RuntimeException("Sugerencia no encontrada o no tienes permiso para eliminarla"));
         repository.delete(suggestion);
+    }
+
+    // ─── Admin: listado de todas las sugerencias con datos del estudiante ─────
+    public List<AdminSuggestionResponseDTO> getAllForAdmin() {
+        return repository.findAllWithStudent()
+                .stream()
+                .map(row -> {
+                    Suggestion s = (Suggestion) row[0];
+                    User u       = (User) row[1];
+                    return new AdminSuggestionResponseDTO(
+                            s.getId(),
+                            u.getFullName(),
+                            s.getCategory(),
+                            s.getBody(),
+                            s.getCreatedAt()
+                    );
+                })
+                .collect(Collectors.toList());
     }
 
     // ─── Mapper ───────────────────────────────────────────────────────────────
