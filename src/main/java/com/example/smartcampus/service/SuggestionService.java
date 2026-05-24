@@ -52,10 +52,13 @@ public class SuggestionService {
         repository.delete(suggestion);
     }
 
-    // ─── Admin: listado de todas las sugerencias con datos del estudiante ─────
-    public List<AdminSuggestionResponseDTO> getAllForAdmin() {
-        return repository.findAllWithStudent()
-                .stream()
+    // ─── Admin: listado de todas las sugerencias con datos del estudiante (con filtro opcional) ─────
+    public List<AdminSuggestionResponseDTO> getAllForAdmin(SuggestionCategory category) {
+        List<Object[]> rows = (category == null)
+                ? repository.findAllWithStudent()
+                : repository.findAllWithStudentByCategory(category);
+
+        return rows.stream()
                 .map(row -> {
                     Suggestion s = (Suggestion) row[0];
                     User u       = (User) row[1];
