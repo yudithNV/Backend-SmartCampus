@@ -4,6 +4,7 @@ import com.example.smartcampus.dto.AdminSuggestionResponseDTO;
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.SuggestionRequestDTO;
 import com.example.smartcampus.dto.SuggestionResponseDTO;
+import com.example.smartcampus.entity.SuggestionCategory;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.service.SuggestionService;
 import jakarta.validation.Valid;
@@ -53,11 +54,12 @@ public class SuggestionController {
         }
     }
 
-    // GET /api/suggestions/admin — solo administradores
+    // GET /api/suggestions/admin — solo administradores (con filtro opcional por categoría)
     @GetMapping("/admin")
     @PreAuthorize("hasAuthority('ADMINISTRADOR')")
-    public ResponseEntity<ApiResponse<List<AdminSuggestionResponseDTO>>> getAllForAdmin() {
-        List<AdminSuggestionResponseDTO> result = service.getAllForAdmin();
+    public ResponseEntity<ApiResponse<List<AdminSuggestionResponseDTO>>> getAllForAdmin(
+            @RequestParam(required = false) SuggestionCategory category) {
+        List<AdminSuggestionResponseDTO> result = service.getAllForAdmin(category);
         return ResponseEntity.ok(ApiResponse.ok("Sugerencias obtenidas correctamente", result));
     }
 }

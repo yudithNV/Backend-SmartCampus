@@ -6,9 +6,11 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.smartcampus.entity.Suggestion;
+import com.example.smartcampus.entity.SuggestionCategory;
 
 @Repository
 public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
@@ -28,7 +30,11 @@ public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
     @Query(value = "SELECT s.category::text, COUNT(*) FROM suggestions s GROUP BY s.category ORDER BY COUNT(*) DESC", nativeQuery = true)
     List<Object[]> countSuggestionsByCategory();
 
-    // Admin: todas las sugerencias con datos del estudiante
+    // Admin: todas las sugerencias con datos del estudiante (sin filtro)
     @Query("SELECT s, u FROM Suggestion s JOIN User u ON s.studentId = u.id ORDER BY s.createdAt DESC")
     List<Object[]> findAllWithStudent();
+
+    // Admin: sugerencias filtradas por categoría
+    @Query("SELECT s, u FROM Suggestion s JOIN User u ON s.studentId = u.id WHERE s.category = :category ORDER BY s.createdAt DESC")
+    List<Object[]> findAllWithStudentByCategory(@Param("category") SuggestionCategory category);
 }
