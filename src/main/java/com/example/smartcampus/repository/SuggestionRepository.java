@@ -37,4 +37,8 @@ public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
     // Admin: sugerencias filtradas por categoría
     @Query("SELECT s, u FROM Suggestion s JOIN User u ON s.studentId = u.id WHERE s.category = :category ORDER BY s.createdAt DESC")
     List<Object[]> findAllWithStudentByCategory(@Param("category") SuggestionCategory category);
+
+    // Buscar sugerencia por id con datos del estudiante
+    @Query("SELECT s, u FROM Suggestion s JOIN User u ON s.studentId = u.id WHERE s.id = :id")
+    Optional<Object[]> findByIdWithStudent(@Param("id") Long id);
 }

@@ -14,4 +14,8 @@ public class SuggestionResponseDTO {
     private String category;
     private String body;
     private OffsetDateTime createdAt;
+    // Respuesta administrativa visible al estudiante
+    private String adminResponse;
+    private String respondedByName;
+    private OffsetDateTime respondedAt;
 }

@@ -33,6 +33,15 @@ public class Suggestion {
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
 
+    @Column(name = "admin_response", columnDefinition = "TEXT")
+    private String adminResponse;
+
+    @Column(name = "responded_by")
+    private UUID respondedBy;
+
+    @Column(name = "responded_at")
+    private OffsetDateTime respondedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = OffsetDateTime.now();
