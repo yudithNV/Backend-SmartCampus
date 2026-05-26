@@ -1,15 +1,18 @@
 package com.example.smartcampus.service;
 
 import com.example.smartcampus.dto.AdminSuggestionResponseDTO;
+import com.example.smartcampus.dto.SuggestionReplyDTO;
 import com.example.smartcampus.dto.SuggestionRequestDTO;
 import com.example.smartcampus.dto.SuggestionResponseDTO;
 import com.example.smartcampus.entity.Suggestion;
 import com.example.smartcampus.entity.SuggestionCategory;
 import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.SuggestionRepository;
+import com.example.smartcampus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 public class SuggestionService {
 
     private final SuggestionRepository repository;
+    private final UserRepository userRepository;
 
     // ─── Crear sugerencia ─────────────────────────────────────────────────────
     public SuggestionResponseDTO create(SuggestionRequestDTO dto, User user) {
@@ -67,10 +71,41 @@ public class SuggestionService {
                             u.getFullName(),
                             s.getCategory(),
                             s.getBody(),
-                            s.getCreatedAt()
+                            s.getCreatedAt(),
+                            s.getAdminResponse(),
+                            s.getRespondedBy() != null
+                                    ? userRepository.findById(s.getRespondedBy())
+                                            .map(User::getFullName).orElse(null)
+                                    : null,
+                            s.getRespondedAt()
                     );
                 })
                 .collect(Collectors.toList());
+    }
+
+    // ─── Admin: responder sugerencia ──────────────────────────────────────────
+    public AdminSuggestionResponseDTO reply(Long id, SuggestionReplyDTO dto, User admin) {
+        Suggestion suggestion = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sugerencia no encontrada"));
+
+        suggestion.setAdminResponse(dto.getAdminResponse().trim());
+        suggestion.setRespondedBy(admin.getId());
+        suggestion.setRespondedAt(OffsetDateTime.now());
+
+        repository.save(suggestion);
+
+        return new AdminSuggestionResponseDTO(
+                suggestion.getId(),
+                userRepository.findById(suggestion.getStudentId())
+                        .map(User::getFullName)
+                        .orElse("Estudiante"),
+                suggestion.getCategory(),
+                suggestion.getBody(),
+                suggestion.getCreatedAt(),
+                suggestion.getAdminResponse(),
+                admin.getFullName(),
+                suggestion.getRespondedAt()
+        );
     }
 
     // ─── Mapper ───────────────────────────────────────────────────────────────
@@ -80,7 +115,13 @@ public class SuggestionService {
                 s.getStudentId(),
                 s.getCategory() != null ? s.getCategory().name() : "OTRO",
                 s.getBody(),
-                s.getCreatedAt()
+                s.getCreatedAt(),
+                s.getAdminResponse(),
+                s.getRespondedBy() != null
+                        ? userRepository.findById(s.getRespondedBy())
+                                .map(User::getFullName).orElse(null)
+                        : null,
+                s.getRespondedAt()
         );
     }
 }

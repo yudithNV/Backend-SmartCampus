@@ -2,6 +2,7 @@ package com.example.smartcampus.controller;
 
 import com.example.smartcampus.dto.AdminSuggestionResponseDTO;
 import com.example.smartcampus.dto.ApiResponse;
+import com.example.smartcampus.dto.SuggestionReplyDTO;
 import com.example.smartcampus.dto.SuggestionRequestDTO;
 import com.example.smartcampus.dto.SuggestionResponseDTO;
 import com.example.smartcampus.entity.SuggestionCategory;
@@ -61,5 +62,16 @@ public class SuggestionController {
             @RequestParam(required = false) SuggestionCategory category) {
         List<AdminSuggestionResponseDTO> result = service.getAllForAdmin(category);
         return ResponseEntity.ok(ApiResponse.ok("Sugerencias obtenidas correctamente", result));
+    }
+
+    // PUT /api/suggestions/{id}/reply — solo administradores responden
+    @PutMapping("/{id}/reply")
+    @PreAuthorize("hasAuthority('ADMINISTRADOR')")
+    public ResponseEntity<ApiResponse<AdminSuggestionResponseDTO>> reply(
+            @PathVariable Long id,
+            @RequestBody @Valid SuggestionReplyDTO dto,
+            @AuthenticationPrincipal User admin) {
+        AdminSuggestionResponseDTO result = service.reply(id, dto, admin);
+        return ResponseEntity.ok(ApiResponse.ok("Respuesta registrada correctamente", result));
     }
 }

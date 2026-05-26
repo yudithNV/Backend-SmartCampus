@@ -10,8 +10,12 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 public class AdminSuggestionResponseDTO {
     private Long id;
-    private String studentName;   // nombre del estudiante
-    private SuggestionCategory category; // enum real, NO String
+    private String studentName;
+    private SuggestionCategory category;
     private String body;
     private OffsetDateTime createdAt;
+    // Respuesta administrativa
+    private String adminResponse;
+    private String respondedByName;   // nombre del admin, no el UUID
+    private OffsetDateTime respondedAt;
 }
