@@ -38,4 +38,13 @@ public interface NewsReactionRepository extends JpaRepository<NewsReaction, Long
         GROUP BY r.newsId, r.reactionType
     """)
     List<Object[]> countGroupedByTypeForNewsIds(@Param("newsIds") List<Long> newsIds);
+    
+    @Query("""
+        SELECT r FROM NewsReaction r
+        WHERE r.newsId IN :newsIds AND r.userId = :userId
+    """)
+    List<NewsReaction> findAllByNewsIdIn(
+        @Param("newsIds") List<Long> newsIds,
+        @Param("userId") UUID userId
+    );
 }
