@@ -6,6 +6,7 @@ import com.example.smartcampus.entity.NewsStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -27,5 +28,9 @@ public class NewsResponseDTO {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private Boolean isFavorite;
+    private Map<String, Long> reactionCounts;  
+    private Long reactionTotal;
+    private String myReaction;    
+    private Long commentCount;
 
 }

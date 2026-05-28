@@ -22,6 +22,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +31,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.Objects; 
 import com.example.smartcampus.repository.FavoriteNewsRepository;
+import com.example.smartcampus.repository.NewsCommentRepository;
+import com.example.smartcampus.repository.NewsReactionRepository;
 
 
 @Service
@@ -40,6 +44,9 @@ public class NewsService {
     private final CareerRepository careerRepository;  
     private final FavoriteNewsRepository favoriteNewsRepository;  
     private static final long MIN_SCHEDULED_MINUTES = 5;
+    private NewsReactionRepository reactionRepository;
+    private NewsCommentRepository commentRepository;
+
 
 
     public NewsResponseDTO createNews(NewsCreateDTO dto, User author) {
@@ -231,7 +238,11 @@ public class NewsService {
             n.getScheduledAt(),
             n.getCreatedAt(),
             n.getUpdatedAt(),
-            false 
+            false,
+            new LinkedHashMap<>(),
+            0L,
+            null,
+            0L
     );
 }
 
@@ -268,4 +279,57 @@ public class NewsService {
 
     return page;
 }
+
+        public Page<NewsResponseDTO> enrichWithReactionsAndComments(
+                Page<NewsResponseDTO> page, UUID userId) {
+
+        List<Long> ids = page.getContent().stream()
+                .map(NewsResponseDTO::getId)
+                .toList();
+
+        if (ids.isEmpty()) return page;
+
+        // Batch query: conteos de reacciones agrupados
+        Map<Long, Map<String, Long>> reactionsMap = new HashMap<>();
+        Map<Long, Long> totalsMap = new HashMap<>();
+
+        for (Object[] row : reactionRepository.countGroupedByTypeForNewsIds(ids)) {
+                Long newsId  = (Long)   row[0];
+                String type  = row[1].toString();
+                Long count   = (Long)   row[2];
+
+                reactionsMap.computeIfAbsent(newsId, k -> new LinkedHashMap<>()).put(type, count);
+                totalsMap.merge(newsId, count, Long::sum);
+        }
+
+        // Mi reacción (solo si hay usuario)
+        Map<Long, String> myReactionMap = new HashMap<>();
+        if (userId != null) {
+                reactionRepository.findAllByNewsIdIn(ids, userId).forEach(r ->
+                myReactionMap.put(r.getNewsId(), r.getReactionType().name())
+                );
+        }
+
+        // Conteo de comentarios visibles
+        Map<Long, Long> commentCountMap = new HashMap<>();
+        commentRepository.countVisibleForNewsIds(ids).forEach(row -> {
+                Long newsId = (Long) row[0];
+                Long count  = (Long) row[1];
+                commentCountMap.put(newsId, count);
+        });
+
+        page.getContent().forEach(dto -> {
+                Map<String, Long> counts = new LinkedHashMap<>();
+                counts.put("LIKE", 0L); counts.put("LOVE", 0L); counts.put("WOW", 0L);
+                if (reactionsMap.containsKey(dto.getId())) {
+                counts.putAll(reactionsMap.get(dto.getId()));
+                }
+                dto.setReactionCounts(counts);
+                dto.setReactionTotal(totalsMap.getOrDefault(dto.getId(), 0L));
+                dto.setMyReaction(myReactionMap.get(dto.getId()));
+                dto.setCommentCount(commentCountMap.getOrDefault(dto.getId(), 0L));
+        });
+
+        return page;
+        }
 }

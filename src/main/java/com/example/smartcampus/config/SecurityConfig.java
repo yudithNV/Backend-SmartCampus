@@ -76,7 +76,22 @@ public class SecurityConfig {
                 // ── Noticias  
                 .requestMatchers(HttpMethod.GET, "/api/news").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
+                // Agregar dentro de authorizeHttpRequests en SecurityConfig.java:
 
+                // ── REACCIONES ──────────────────────────────────────────────────────────────
+                .requestMatchers(HttpMethod.GET,    "/api/news/*/reactions").authenticated()
+                .requestMatchers(HttpMethod.POST,   "/api/news/*/reactions").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/news/*/reactions").authenticated()
+
+                // ── COMENTARIOS ─────────────────────────────────────────────────────────────
+                .requestMatchers(HttpMethod.GET,    "/api/news/*/comments").authenticated()
+                .requestMatchers(HttpMethod.POST,   "/api/news/*/comments")
+                    .hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/news/*/comments/*")
+                    .hasAnyRole("ESTUDIANTE", "PUBLICADOR", "ADMINISTRADOR")
+                .requestMatchers(HttpMethod.PATCH,  "/api/news/*/comments/*/hide")
+                    .hasAnyRole("PUBLICADOR", "ADMINISTRADOR")
+                    
                 // ── Noticias  solo PUBLICADOR 
                 .requestMatchers(HttpMethod.POST,   "/api/news").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.PUT,    "/api/news/**").hasRole("PUBLICADOR")
