@@ -13,14 +13,15 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class CommentResponseDTO {
+
     private Long id;
     private Long newsId;
     private UUID userId;
     private String userFullName;
     private String userAvatarUrl;
     private String body;
-    private Boolean hidden;
-    private Boolean isOwn;       
-    private Boolean canHide;     
+    private boolean hidden;
+    private boolean isOwn;
+    private boolean canHide;
     private OffsetDateTime createdAt;
 }

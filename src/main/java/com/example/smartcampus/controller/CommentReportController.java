@@ -18,10 +18,7 @@ public class CommentReportController {
 
     private final CommentReportService reportService;
 
-    /**
-     * SCRUM-434: POST /api/news/{newsId}/comments/{commentId}/report
-     * Crea un reporte sobre un comentario. Idempotente para el mismo usuario.
-     */
+
     @PostMapping
     public ResponseEntity<ApiResponse<CommentReportResponseDTO>> reportComment(
             @PathVariable Long newsId,
@@ -37,10 +34,6 @@ public class CommentReportController {
         return ResponseEntity.ok(ApiResponse.ok(msg, result));
     }
 
-    /**
-     * GET /api/news/{newsId}/comments/{commentId}/report/status
-     * Verifica si el usuario ya reportó este comentario (para el frontend).
-     */
     @GetMapping("/status")
     public ResponseEntity<ApiResponse<Boolean>> checkReportStatus(
             @PathVariable Long newsId,

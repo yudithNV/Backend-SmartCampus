@@ -110,20 +110,38 @@ public class NewsCommentService {
     }
 
     private CommentResponseDTO toDTO(NewsComment c, User author, User viewer) {
-        boolean isOwn = viewer != null && viewer.getId().equals(c.getUserId());
+        boolean isOwn = viewer != null &&
+                viewer.getId().equals(c.getUserId());
         boolean canHide = viewer != null &&
-                (viewer.getRole() == Role.PUBLICADOR || viewer.getRole() == Role.ADMINISTRADOR);
+                (viewer.getRole() == Role.PUBLICADOR ||
+                viewer.getRole() == Role.ADMINISTRADOR);
 
         return CommentResponseDTO.builder()
                 .id(c.getId())
                 .newsId(c.getNewsId())
                 .userId(c.getUserId())
-                .userFullName(author != null ? author.getFullName() : "Usuario")
-                .userAvatarUrl(author != null ? author.getAvatarUrl() : null)
+
+                .userFullName(
+                        author != null
+                                ? author.getFullName()
+                                : "Usuario"
+                )
+
+                .userAvatarUrl(
+                        author != null
+                                ? author.getAvatarUrl()
+                                : null
+                )
+
                 .body(c.getBody())
                 .hidden(c.getHidden())
+
+                // boolean primitivo
                 .isOwn(isOwn)
+
+                // boolean primitivo
                 .canHide(canHide)
+
                 .createdAt(c.getCreatedAt())
                 .build();
     }
