@@ -13,13 +13,10 @@ import java.util.UUID;
 @Repository
 public interface NewsCommentRepository extends JpaRepository<NewsComment, Long> {
 
-    // Todos los comentarios visibles de una noticia, más recientes primero (SCRUM-473)
     List<NewsComment> findByNewsIdAndHiddenFalseOrderByCreatedAtDesc(Long newsId);
 
-    // Para publisher: todos los comentarios incluyendo ocultos
     List<NewsComment> findByNewsIdOrderByCreatedAtDesc(Long newsId);
 
-    // Buscar comentario específico de un usuario (para eliminación/validación)
     Optional<NewsComment> findByIdAndUserId(Long id, UUID userId);
 
     long countByNewsIdAndHiddenFalse(Long newsId);
@@ -30,4 +27,7 @@ public interface NewsCommentRepository extends JpaRepository<NewsComment, Long> 
         GROUP BY c.newsId
     """)
     List<Object[]> countVisibleForNewsIds(@Param("newsIds") List<Long> newsIds);
+
+    @Query("SELECT c.id FROM NewsComment c WHERE c.newsId IN :newsIds")
+    List<Long> findCommentIdsByNewsIds(@Param("newsIds") List<Long> newsIds);
 }
