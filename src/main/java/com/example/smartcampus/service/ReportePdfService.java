@@ -54,14 +54,15 @@ public class ReportePdfService {
         Table table = new Table(7);
         table.setWidth(100);
         table.setPadding(5);
+        table.setBorderWidth(1);
 
         String[] headers = {"ID", "Nombre", "Descripción", "Fecha Inicio", "Ubicación", "Tipo", "Estado"};
         for (String header : headers) {
-            com.lowagie.text.Cell cell = new com.lowagie.text.Cell(new Paragraph(header, headerFont));
-            cell.setBackgroundColor(new com.lowagie.text.Color(0, 0, 139));
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(cell);
+            Paragraph p = new Paragraph(header, headerFont);
+            p.setAlignment(Element.ALIGN_CENTER);
+            table.addCell(p);
         }
+        table.endHeaders();
 
         for (Event evento : eventos) {
             table.addCell(new Paragraph(evento.getId() != null ? evento.getId().toString() : "", normalFont));
@@ -101,14 +102,15 @@ public class ReportePdfService {
         Table table = new Table(6);
         table.setWidth(100);
         table.setPadding(5);
+        table.setBorderWidth(1);
 
         String[] headers = {"ID", "Nombre", "Email", "Rol", "Estado", "Carrera"};
         for (String header : headers) {
-            com.lowagie.text.Cell cell = new com.lowagie.text.Cell(new Paragraph(header, headerFont));
-            cell.setBackgroundColor(new com.lowagie.text.Color(0, 0, 139));
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(cell);
+            Paragraph p = new Paragraph(header, headerFont);
+            p.setAlignment(Element.ALIGN_CENTER);
+            table.addCell(p);
         }
+        table.endHeaders();
 
         for (User usuario : usuarios) {
             table.addCell(new Paragraph(usuario.getId() != null ? usuario.getId().toString() : "", normalFont));
@@ -146,14 +148,15 @@ public class ReportePdfService {
         Table table = new Table(6);
         table.setWidth(100);
         table.setPadding(5);
+        table.setBorderWidth(1);
 
         String[] headers = {"ID", "Título", "Descripción", "Categoría", "Estado", "Fecha"};
         for (String header : headers) {
-            com.lowagie.text.Cell cell = new com.lowagie.text.Cell(new Paragraph(header, headerFont));
-            cell.setBackgroundColor(new com.lowagie.text.Color(0, 0, 139));
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(cell);
+            Paragraph p = new Paragraph(header, headerFont);
+            p.setAlignment(Element.ALIGN_CENTER);
+            table.addCell(p);
         }
+        table.endHeaders();
 
         for (Complaint queja : quejas) {
             table.addCell(new Paragraph(queja.getId() != null ? queja.getId().toString() : "", normalFont));
@@ -192,14 +195,15 @@ public class ReportePdfService {
         Table table = new Table(7);
         table.setWidth(100);
         table.setPadding(5);
+        table.setBorderWidth(1);
 
         String[] headers = {"ID", "Título", "Categoría", "Estado", "Autor", "Fecha", "Contenido"};
         for (String header : headers) {
-            com.lowagie.text.Cell cell = new com.lowagie.text.Cell(new Paragraph(header, headerFont));
-            cell.setBackgroundColor(new com.lowagie.text.Color(0, 0, 139));
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(cell);
+            Paragraph p = new Paragraph(header, headerFont);
+            p.setAlignment(Element.ALIGN_CENTER);
+            table.addCell(p);
         }
+        table.endHeaders();
 
         for (News pub : publicaciones) {
             table.addCell(new Paragraph(pub.getId() != null ? pub.getId().toString() : "", normalFont));
@@ -237,14 +241,15 @@ public class ReportePdfService {
         Table table = new Table(6);
         table.setWidth(100);
         table.setPadding(5);
+        table.setBorderWidth(1);
 
         String[] headers = {"ID", "Recurso", "Usuario", "Fecha Inicio", "Fecha Fin", "Estado"};
         for (String header : headers) {
-            com.lowagie.text.Cell cell = new com.lowagie.text.Cell(new Paragraph(header, headerFont));
-            cell.setBackgroundColor(new com.lowagie.text.Color(0, 0, 139));
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(cell);
+            Paragraph p = new Paragraph(header, headerFont);
+            p.setAlignment(Element.ALIGN_CENTER);
+            table.addCell(p);
         }
+        table.endHeaders();
 
         table.addCell(new Paragraph("1", normalFont));
         table.addCell(new Paragraph("Aula 101", normalFont));
