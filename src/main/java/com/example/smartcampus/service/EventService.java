@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.smartcampus.dto.CareerDTO;
 import com.example.smartcampus.dto.CategoryDTO;
+import com.example.smartcampus.dto.EventAttendeeDTO;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
 import com.example.smartcampus.dto.LocationDTO;
@@ -33,7 +34,6 @@ import com.example.smartcampus.repository.EventRegistrationRepository;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
 import com.example.smartcampus.repository.UserRepository;
-import com.example.smartcampus.service.ReminderService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -569,6 +569,41 @@ public class EventService {
         return eventRepository.findByCareerIdOrderByStartDatetimeAsc(student.getCareerId())
                 .stream()
                 .map(event -> mapToDTO(event, studentId))
+                .collect(Collectors.toList());
+    }
+
+    public List<EventAttendeeDTO> getEventAttendees(Long eventoId) {
+        eventRepository.findById(eventoId)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        List<EventRegistration> registrations = eventRegistrationRepository.findByEventId(eventoId);
+        
+        return registrations.stream()
+                .map(registration -> {
+                    User user = userRepository.findById(registration.getStudentId())
+                            .orElse(null);
+                    
+                    if (user == null) {
+                        return null;
+                    }
+                    
+                    String careerName = "";
+                    if (user.getCareerId() != null) {
+                        careerName = careerRepository.findById(user.getCareerId())
+                                .map(career -> career.getName())
+                                .orElse("");
+                    }
+                    
+                    return EventAttendeeDTO.builder()
+                            .id(user.getId())
+                            .nombreCompleto(user.getFullName())
+                            .correo(user.getEmail())
+                            .carreraArea(careerName)
+                            .fechaInscripcion(registration.getRegisteredAt())
+                            .estado("Inscrito")
+                            .build();
+                })
+                .filter(dto -> dto != null)
                 .collect(Collectors.toList());
     }
 }

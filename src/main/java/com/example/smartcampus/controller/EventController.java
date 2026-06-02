@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.smartcampus.dto.ApiResponse;
+import com.example.smartcampus.dto.EventAttendeeDTO;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
 import com.example.smartcampus.dto.RegisteredEventsResponse;
@@ -172,5 +173,12 @@ public class EventController {
             @AuthenticationPrincipal User user) {
         eventService.deleteEvent(id, user);
         return ResponseEntity.ok(ApiResponse.ok("Evento eliminado exitosamente", null));
+    }
+
+    @GetMapping("/{eventoId}/inscritos")
+    public ResponseEntity<ApiResponse<List<EventAttendeeDTO>>> getEventAttendees(
+            @PathVariable Long eventoId) {
+        List<EventAttendeeDTO> result = eventService.getEventAttendees(eventoId);
+        return ResponseEntity.ok(ApiResponse.ok("Inscritos obtenidos correctamente", result));
     }
 }
