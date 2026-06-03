@@ -23,5 +23,6 @@ public class CommentResponseDTO {
     private boolean hidden;
     private boolean isOwn;
     private boolean canHide;
+    private boolean reportedByCurrentUser;
     private OffsetDateTime createdAt;
 }

@@ -2,9 +2,11 @@ package com.example.smartcampus.service;
 
 import com.example.smartcampus.dto.CommentCreateDTO;
 import com.example.smartcampus.dto.CommentResponseDTO;
+import com.example.smartcampus.entity.CommentReport;
 import com.example.smartcampus.entity.NewsComment;
 import com.example.smartcampus.entity.Role;
 import com.example.smartcampus.entity.User;
+import com.example.smartcampus.repository.CommentReportRepository;
 import com.example.smartcampus.repository.NewsCommentRepository;
 import com.example.smartcampus.repository.NewsRepository;
 import com.example.smartcampus.repository.UserRepository;
@@ -14,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +30,7 @@ public class NewsCommentService {
     private final NewsCommentRepository commentRepository;
     private final NewsRepository newsRepository;
     private final UserRepository userRepository;
-
+    private final CommentReportRepository reportRepository;
 
     @Transactional
     public CommentResponseDTO createComment(Long newsId, CommentCreateDTO dto, User author) {
@@ -50,29 +53,55 @@ public class NewsCommentService {
         return toDTO(commentRepository.save(comment), author);
     }
 
-
     @Transactional(readOnly = true)
     public List<CommentResponseDTO> getComments(Long newsId, User viewer) {
+
         boolean canSeeHidden = viewer != null &&
-                (viewer.getRole() == Role.PUBLICADOR || viewer.getRole() == Role.ADMINISTRADOR);
+                (viewer.getRole() == Role.PUBLICADOR ||
+                 viewer.getRole() == Role.ADMINISTRADOR);
 
         List<NewsComment> comments = canSeeHidden
                 ? commentRepository.findByNewsIdOrderByCreatedAtDesc(newsId)
                 : commentRepository.findByNewsIdAndHiddenFalseOrderByCreatedAtDesc(newsId);
 
-        Set<UUID> authorIds = comments.stream().map(NewsComment::getUserId).collect(Collectors.toSet());
+        Set<UUID> authorIds = comments.stream()
+                .map(NewsComment::getUserId)
+                .collect(Collectors.toSet());
+
         Map<UUID, User> usersMap = userRepository.findAllById(authorIds)
                 .stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        // SCRUM-FIX: cargar qué comentarios reportó el viewer actual
+        Set<Long> reportedByViewer = new HashSet<>();
+
+        if (viewer != null) {
+            List<Long> commentIds = comments.stream()
+                    .map(NewsComment::getId)
+                    .collect(Collectors.toList());
+
+            reportedByViewer = reportRepository
+                    .findByCommentIdInAndReporterId(commentIds, viewer.getId())
+                    .stream()
+                    .map(CommentReport::getCommentId)
+                    .collect(Collectors.toSet());
+        }
+
+        final Set<Long> finalReportedByViewer = reportedByViewer;
+
         return comments.stream()
-                .map(c -> toDTO(c, usersMap.get(c.getUserId()), viewer))
+                .map(c -> toDTO(
+                        c,
+                        usersMap.get(c.getUserId()),
+                        viewer,
+                        finalReportedByViewer
+                ))
                 .collect(Collectors.toList());
     }
 
-
     @Transactional
     public void deleteComment(Long newsId, Long commentId, User user) {
+
         NewsComment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new NotFoundException("Comentario no encontrado"));
 
@@ -87,11 +116,14 @@ public class NewsCommentService {
         commentRepository.deleteById(commentId);
     }
 
-
     @Transactional
     public CommentResponseDTO toggleHideComment(Long newsId, Long commentId, User user) {
-        if (user.getRole() != Role.PUBLICADOR && user.getRole() != Role.ADMINISTRADOR) {
-            throw new ForbiddenException("Solo publicadores o administradores pueden ocultar comentarios");
+
+        if (user.getRole() != Role.PUBLICADOR &&
+            user.getRole() != Role.ADMINISTRADOR) {
+            throw new ForbiddenException(
+                    "Solo publicadores o administradores pueden ocultar comentarios"
+            );
         }
 
         NewsComment comment = commentRepository.findById(commentId)
@@ -102,46 +134,52 @@ public class NewsCommentService {
         }
 
         comment.setHidden(!comment.getHidden());
+
         return toDTO(commentRepository.save(comment), user);
     }
 
     private CommentResponseDTO toDTO(NewsComment c, User author) {
-        return toDTO(c, author, null);
+        return toDTO(c, author, null, Set.of());
     }
 
-    private CommentResponseDTO toDTO(NewsComment c, User author, User viewer) {
+    private CommentResponseDTO toDTO(
+            NewsComment c,
+            User author,
+            User viewer,
+            Set<Long> reportedByViewer
+    ) {
+
+        // SCRUM-FIX: isOwn solo si el viewer es el autor
         boolean isOwn = viewer != null &&
                 viewer.getId().equals(c.getUserId());
+
         boolean canHide = viewer != null &&
                 (viewer.getRole() == Role.PUBLICADOR ||
-                viewer.getRole() == Role.ADMINISTRADOR);
+                 viewer.getRole() == Role.ADMINISTRADOR);
+
+        // SCRUM-FIX: informado por backend
+        boolean reportedByCurrentUser =
+                reportedByViewer.contains(c.getId());
 
         return CommentResponseDTO.builder()
                 .id(c.getId())
                 .newsId(c.getNewsId())
                 .userId(c.getUserId())
-
                 .userFullName(
                         author != null
                                 ? author.getFullName()
                                 : "Usuario"
                 )
-
                 .userAvatarUrl(
                         author != null
                                 ? author.getAvatarUrl()
                                 : null
                 )
-
                 .body(c.getBody())
                 .hidden(c.getHidden())
-
-                // boolean primitivo
                 .isOwn(isOwn)
-
-                // boolean primitivo
                 .canHide(canHide)
-
+                .reportedByCurrentUser(reportedByCurrentUser)
                 .createdAt(c.getCreatedAt())
                 .build();
     }

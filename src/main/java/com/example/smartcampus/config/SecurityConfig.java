@@ -96,6 +96,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,   "/api/news").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.PUT,    "/api/news/**").hasRole("PUBLICADOR")
                 .requestMatchers(HttpMethod.DELETE, "/api/news/**").hasRole("PUBLICADOR")
+                .requestMatchers(HttpMethod.GET,    "/api/publisher/reports/**").hasAnyRole("PUBLICADOR","ADMINISTRADOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/publisher/comments/**").hasAnyRole("PUBLICADOR","ADMINISTRADOR")
 
                 // Subida de archivos
                 .requestMatchers(HttpMethod.POST, "/api/files/**").permitAll()
