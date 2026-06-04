@@ -572,38 +572,31 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
-    public List<EventAttendeeDTO> getEventAttendees(Long eventoId) {
+    public Page<EventAttendeeDTO> getEventAttendees(Long eventoId, Pageable pageable) {
+    // 1. Verificamos evento
         eventRepository.findById(eventoId)
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
 
-        List<EventRegistration> registrations = eventRegistrationRepository.findByEventId(eventoId);
-        
-        return registrations.stream()
-                .map(registration -> {
-                    User user = userRepository.findById(registration.getStudentId())
-                            .orElse(null);
-                    
-                    if (user == null) {
-                        return null;
-                    }
-                    
-                    String careerName = "";
-                    if (user.getCareerId() != null) {
-                        careerName = careerRepository.findById(user.getCareerId())
-                                .map(career -> career.getName())
-                                .orElse("");
-                    }
-                    
-                    return EventAttendeeDTO.builder()
-                            .id(user.getId())
-                            .nombreCompleto(user.getFullName())
-                            .correo(user.getEmail())
-                            .carreraArea(careerName)
-                            .fechaInscripcion(registration.getRegisteredAt())
-                            .estado("Inscrito")
-                            .build();
-                })
-                .filter(dto -> dto != null)
-                .collect(Collectors.toList());
+        // 2. Buscamos registros PAGINADOS
+        Page<EventRegistration> registrations = eventRegistrationRepository.findByEventId(eventoId, pageable);
+
+        // 3. Convertimos a Page de DTO
+        return registrations.map(registration -> {
+            User user = userRepository.findById(registration.getStudentId()).orElse(null);
+            if (user == null) return null;
+
+            String careerName = (user.getCareerId() != null) 
+                                ? careerRepository.findById(user.getCareerId()).map(c -> c.getName()).orElse("") 
+                                : "";
+            
+            return EventAttendeeDTO.builder()
+                    .id(user.getId())
+                    .nombreCompleto(user.getFullName())
+                    .correo(user.getEmail())
+                    .carreraArea(careerName)
+                    .fechaInscripcion(registration.getRegisteredAt())
+                    .estado("Inscrito")
+                    .build();
+        });
     }
 }

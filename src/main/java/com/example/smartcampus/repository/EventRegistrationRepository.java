@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,7 +21,7 @@ public interface EventRegistrationRepository extends JpaRepository<EventRegistra
     List<EventRegistration> findByStudentId(UUID studentId);
 
     // Buscar registros por evento
-    List<EventRegistration> findByEventId(Long eventId);
+    Page<EventRegistration> findByEventId(Long eventId, Pageable pageable);
 
     // Buscar registro por evento y estudiante (retorna Optional)
     Optional<EventRegistration> findByEventIdAndStudentId(Long eventId, UUID studentId);

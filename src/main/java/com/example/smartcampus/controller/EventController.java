@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -176,9 +178,13 @@ public class EventController {
     }
 
     @GetMapping("/{eventoId}/inscritos")
-    public ResponseEntity<ApiResponse<List<EventAttendeeDTO>>> getEventAttendees(
-            @PathVariable Long eventoId) {
-        List<EventAttendeeDTO> result = eventService.getEventAttendees(eventoId);
-        return ResponseEntity.ok(ApiResponse.ok("Inscritos obtenidos correctamente", result));
+    public ResponseEntity<Page<EventAttendeeDTO>> getInscritos(
+            @PathVariable Long eventoId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        // Usamos PageRequest.of para convertir esos parámetros a un Pageable
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(eventService.getEventAttendees(eventoId, pageable));
     }
 }
