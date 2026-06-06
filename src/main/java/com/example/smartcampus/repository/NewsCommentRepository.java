@@ -28,6 +28,6 @@ public interface NewsCommentRepository extends JpaRepository<NewsComment, Long> 
     """)
     List<Object[]> countVisibleForNewsIds(@Param("newsIds") List<Long> newsIds);
 
-    @Query("SELECT c.id FROM NewsComment c")
-        List<Long> findAllCommentIds();
+    @Query("SELECT c.id FROM NewsComment c WHERE c.newsId IN :newsIds")
+    List<Long> findCommentIdsByNewsIds(@Param("newsIds") List<Long> newsIds);
 }

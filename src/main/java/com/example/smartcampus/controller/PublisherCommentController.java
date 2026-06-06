@@ -22,6 +22,12 @@ public class PublisherCommentController {
             @AuthenticationPrincipal User user) {
 
         publisherCommentService.deleteComment(commentId, user);
-        return ResponseEntity.ok(ApiResponse.ok("Comentario eliminado permanentemente", null));
+
+        return ResponseEntity.ok(
+            ApiResponse.ok(
+                "Comentario eliminado permanentemente",
+                null
+            )
+        );
     }
 }

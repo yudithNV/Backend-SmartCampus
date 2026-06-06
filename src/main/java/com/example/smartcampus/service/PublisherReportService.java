@@ -16,66 +16,40 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PublisherReportService {
 
-    private final CommentReportRepository reportRepository;
-    private final NewsCommentRepository commentRepository;
-    private final NewsRepository newsRepository;
-    private final UserRepository userRepository;
+   private final CommentReportRepository  reportRepository;
+    private final NewsCommentRepository    commentRepository;
+    private final NewsRepository           newsRepository;
+    private final UserRepository           userRepository;
 
     @Transactional(readOnly = true)
     public List<ModerationReportDTO> getReportsForPublisher(User publisher, ReportStatus status) {
         validatePublisher(publisher);
 
-        // Todos los IDs de comentarios que tienen al menos un reporte
-        List<Long> allCommentIds = commentRepository.findAllCommentIds();
+         List<News> myNews = newsRepository.findAllByAuthorIdOrderByCreatedAtDesc(publisher.getId());
+        if (myNews.isEmpty()) return Collections.emptyList();
 
-        if (allCommentIds.isEmpty()) {
-            return Collections.emptyList();
-        }
+         Set<Long> myNewsIds = myNews.stream().map(News::getId).collect(Collectors.toSet());
+
+        List<Long> myCommentIds = commentRepository
+                .findCommentIdsByNewsIds(new ArrayList<>(myNewsIds));
+
+        if (myCommentIds.isEmpty()) return Collections.emptyList();
 
         List<CommentReport> reports;
 
         if (status != null) {
-            reports = reportRepository.findByCommentIdInAndStatus(
-                    allCommentIds,
-                    status
-            );
+            reports = reportRepository.findByCommentIdInAndStatus(myCommentIds, status);
+            
         } else {
-            reports = reportRepository.findByCommentIdIn(allCommentIds);
+            reports = reportRepository.findByCommentIdIn(myCommentIds);
         }
 
-        if (reports.isEmpty()) {
-            return Collections.emptyList();
-        }
+        Map<Long, NewsComment> commentsMap = commentRepository.findAllById(
+                reports.stream().map(CommentReport::getCommentId).collect(Collectors.toList()))
+                .stream().collect(Collectors.toMap(NewsComment::getId, c -> c));
 
-        // Obtener comentarios reportados
-        List<Long> reportedCommentIds = reports.stream()
-                .map(CommentReport::getCommentId)
-                .distinct()
-                .collect(Collectors.toList());
-
-        Map<Long, NewsComment> commentsMap = commentRepository
-                .findAllById(reportedCommentIds)
-                .stream()
-                .collect(Collectors.toMap(
-                        NewsComment::getId,
-                        c -> c
-                ));
-
-        // Obtener noticias relacionadas
-        Set<Long> newsIds = commentsMap.values()
-                .stream()
-                .map(NewsComment::getNewsId)
-                .collect(Collectors.toSet());
-
-        Map<Long, News> newsMap = newsRepository
-                .findAllById(new ArrayList<>(newsIds))
-                .stream()
-                .collect(Collectors.toMap(
-                        News::getId,
-                        n -> n
-                ));
-
-        // Obtener nombres de usuarios reportantes
+        Map<Long, News> newsMap = myNews.stream()
+                .collect(Collectors.toMap(News::getId, n -> n));
         Map<UUID, String> userNames = loadUserNames(
                 reports.stream()
                         .map(CommentReport::getReporterId)
@@ -84,25 +58,12 @@ public class PublisherReportService {
 
         // Total de reportes por comentario
         Map<Long, Long> totalByComment = reportRepository
-                .countGroupedByCommentId(reportedCommentIds);
+                .countGroupedByCommentId(myCommentIds);
 
         return reports.stream().map(r -> {
                 NewsComment comment = commentsMap.get(r.getCommentId());
-
-                Long newsId = comment != null
-                        ? comment.getNewsId()
-                        : null;
-
-                // Recuperar el comentario desde BD si no está en el mapa
-                if (newsId == null) {
-                        newsId = commentRepository.findById(r.getCommentId())
-                                .map(NewsComment::getNewsId)
-                                .orElse(null);
-                }
-
-                News news = newsId != null
-                        ? newsMap.get(newsId)
-                        : null;
+                Long newsId = comment != null ? comment.getNewsId() : null;
+                News news = newsId != null ? newsMap.get(newsId) : null;
 
                 return ModerationReportDTO.builder()
                         .id(r.getId())
@@ -111,48 +72,52 @@ public class PublisherReportService {
                         .newsId(newsId)
                         .newsTitle(news != null ? news.getTitle() : "")
                         .reporterId(r.getReporterId())
-                        .reporterName(
-                                userNames.getOrDefault(
-                                        r.getReporterId(),
-                                        "Usuario"
-                                )
-                        )
+                        .reporterName(userNames.getOrDefault(r.getReporterId(), "Usuario"))
                         .reason(r.getReason())
                         .description(r.getDescription())
                         .status(r.getStatus())
                         .createdAt(r.getCreatedAt())
-                        .totalReportsForComment(
-                                totalByComment.getOrDefault(
-                                        r.getCommentId(),
-                                        1L
-                                )
-                        )
+                        .totalReportsForComment(totalByComment.getOrDefault(r.getCommentId(), 1L))
                         .build();
                 }).collect(Collectors.toList());
     }
 
-   @Transactional(readOnly = true)
-        public PublisherReportSummaryDTO getSummary(User publisher) {
+    @Transactional(readOnly = true)
+    public PublisherReportSummaryDTO getSummary(User publisher) {
         validatePublisher(publisher);
 
-        List<Long> allCommentIds = commentRepository.findAllCommentIds();
-        if (allCommentIds.isEmpty()) {
-                return PublisherReportSummaryDTO.builder()
-                        .totalPending(0).pendingByNewsId(Collections.emptyMap()).build();
+         List<News> myNews = newsRepository.findAllByAuthorIdOrderByCreatedAtDesc(publisher.getId());
+        if (myNews.isEmpty()) {
+            return PublisherReportSummaryDTO.builder()
+                    .totalPending(0)
+                    .pendingByNewsId(Collections.emptyMap())
+                    .build();
         }
 
-        long total = reportRepository.countByCommentIdInAndStatus(allCommentIds, ReportStatus.PENDIENTE);
+        Set<Long> myNewsIds = myNews.stream().map(News::getId).collect(Collectors.toSet());
+        List<Long> myCommentIds = commentRepository
+                .findCommentIdsByNewsIds(new ArrayList<>(myNewsIds));
 
+        if (myCommentIds.isEmpty()) {
+            return PublisherReportSummaryDTO.builder()
+                    .totalPending(0)
+                    .pendingByNewsId(Collections.emptyMap())
+                    .build();
+        }
+
+        long total = reportRepository.countByCommentIdInAndStatus(
+                myCommentIds, ReportStatus.PENDIENTE);
         Map<Long, Long> pendingByNews = new HashMap<>();
         List<CommentReport> pending = reportRepository
-                .findByCommentIdInAndStatus(allCommentIds, ReportStatus.PENDIENTE);
+                .findByCommentIdInAndStatus(myCommentIds, ReportStatus.PENDIENTE);
 
-        Map<Long, Long> commentToNews = commentRepository.findAllById(allCommentIds)
-                .stream().collect(Collectors.toMap(NewsComment::getId, NewsComment::getNewsId));
+        Map<Long, Long> commentToNews = commentRepository.findAllById(myCommentIds)                .stream().collect(Collectors.toMap(NewsComment::getId, NewsComment::getNewsId));
 
         pending.forEach(r -> {
-                Long newsId = commentToNews.get(r.getCommentId());
-                if (newsId != null) pendingByNews.merge(newsId, 1L, Long::sum);
+                 Long newsId = commentToNews.get(r.getCommentId());
+            if (newsId != null) {
+                pendingByNews.merge(newsId, 1L, Long::sum);
+            }
         });
 
         return PublisherReportSummaryDTO.builder()
@@ -163,18 +128,12 @@ public class PublisherReportService {
 
     private void validatePublisher(User user) {
         if (user.getRole() != Role.PUBLICADOR && user.getRole() != Role.ADMINISTRADOR) {
-                throw new ForbiddenException("Solo los publicadores pueden acceder a esta sección.");
-        }
+throw new ForbiddenException("Solo los publicadores pueden acceder a esta sección.");        }
         }
 
     private Map<UUID, String> loadUserNames(Set<UUID> ids) {
-        return userRepository.findAllById(ids)
-                .stream()
-                .collect(Collectors.toMap(
-                        User::getId,
-                        u -> u.getFullName() != null
-                                ? u.getFullName()
-                                : u.getEmail()
-                ));
+        return userRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(User::getId,
+                        u -> u.getFullName() != null ? u.getFullName() : u.getEmail()));
     }
 }
