@@ -57,4 +57,5 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     }
 
     long countByCommentIdInAndStatus(List<Long> commentIds, ReportStatus status);
+    List<CommentReport> findByCommentIdOrderByCreatedAtDesc(Long commentId);
 }
