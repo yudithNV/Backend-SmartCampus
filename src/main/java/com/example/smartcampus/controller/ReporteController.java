@@ -4,7 +4,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +27,6 @@ public class ReporteController {
     private final ReportePdfService reportePdfService;
 
     @GetMapping("/{modulo}/excel")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PUBLISHER')")
     public ResponseEntity<byte[]> generarReporteExcel(@PathVariable String modulo) {
         try {
             byte[] contenido;
@@ -54,6 +53,10 @@ public class ReporteController {
                     contenido = reporteExcelService.generarReporteReservas();
                     nombreArchivo = "reporte-reservas.xlsx";
                     break;
+                case "sugerencias":
+                    contenido = reporteExcelService.generarReporteSugerencias();
+                    nombreArchivo = "reporte-sugerencias.xlsx";
+                    break;
                 default:
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
             }
@@ -71,7 +74,6 @@ public class ReporteController {
     }
 
     @GetMapping("/{modulo}/pdf")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PUBLISHER')")
     public ResponseEntity<byte[]> generarReportePdf(@PathVariable String modulo) {
         try {
             byte[] contenido;
@@ -97,6 +99,10 @@ public class ReporteController {
                 case "reservas":
                     contenido = reportePdfService.generarReporteReservas();
                     nombreArchivo = "reporte-reservas.pdf";
+                    break;
+                case "sugerencias":
+                    contenido = reportePdfService.generarReporteSugerencias();
+                    nombreArchivo = "reporte-sugerencias.pdf";
                     break;
                 default:
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);

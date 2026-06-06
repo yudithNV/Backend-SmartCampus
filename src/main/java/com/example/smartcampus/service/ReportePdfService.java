@@ -12,6 +12,8 @@ import com.example.smartcampus.entity.News;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.UserRepository;
 import com.example.smartcampus.repository.ComplaintRepository;
+import com.example.smartcampus.entity.Suggestion;
+import com.example.smartcampus.repository.SuggestionRepository;
 import com.example.smartcampus.repository.NewsRepository;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -32,6 +34,7 @@ public class ReportePdfService {
     private final UserRepository userRepository;
     private final ComplaintRepository complaintRepository;
     private final NewsRepository newsRepository;
+    private final SuggestionRepository suggestionRepository;
 
     public byte[] generarReporteEventos() throws DocumentException {
         Document document = new Document();
@@ -264,6 +267,52 @@ public class ReportePdfService {
         table.addCell(new Paragraph("2024-06-20", normalFont));
         table.addCell(new Paragraph("2024-06-20", normalFont));
         table.addCell(new Paragraph("Pendiente", normalFont));
+
+        document.add(table);
+        document.close();
+
+        return out.toByteArray();
+    }
+
+    public byte[] generarReporteSugerencias() throws DocumentException {
+        Document document = new Document();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PdfWriter.getInstance(document, out);
+
+        document.open();
+
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
+        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+        Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+
+        Paragraph title = new Paragraph("Reporte de Sugerencias", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        document.add(title);
+        document.add(new Paragraph("\n"));
+
+        List<Suggestion> sugerencias = suggestionRepository.findAll();
+
+        Table table = new Table(5);
+        table.setWidth(100);
+        table.setPadding(5);
+        table.setBorderWidth(1);
+
+        String[] headers = {"ID", "ID Estudiante", "Categoría", "Detalle", "Fecha"};
+        for (String header : headers) {
+            Paragraph p = new Paragraph(header, headerFont);
+            p.setAlignment(Element.ALIGN_CENTER);
+            table.addCell(p);
+        }
+        table.endHeaders();
+
+        for (Suggestion sug : sugerencias) {
+            table.addCell(new Paragraph(sug.getId() != null ? sug.getId().toString() : "", normalFont));
+            table.addCell(new Paragraph(sug.getStudentId() != null ? sug.getStudentId().toString() : "", normalFont));
+            table.addCell(new Paragraph(sug.getCategory() != null ? sug.getCategory().toString() : "", normalFont));
+            String detail = sug.getBody() != null ? sug.getBody() : "";
+            table.addCell(new Paragraph(detail.length() > 50 ? detail.substring(0, 50) + "..." : detail, normalFont));
+            table.addCell(new Paragraph(sug.getCreatedAt() != null ? sug.getCreatedAt().toString() : "", normalFont));
+        }
 
         document.add(table);
         document.close();

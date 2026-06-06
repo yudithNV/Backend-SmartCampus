@@ -20,6 +20,8 @@ import com.example.smartcampus.entity.User;
 import com.example.smartcampus.repository.ComplaintRepository;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.NewsRepository;
+import com.example.smartcampus.entity.Suggestion;
+import com.example.smartcampus.repository.SuggestionRepository;
 import com.example.smartcampus.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class ReporteExcelService {
     private final UserRepository userRepository;
     private final ComplaintRepository complaintRepository;
     private final NewsRepository newsRepository;
+    private final SuggestionRepository suggestionRepository;
 
     public byte[] generarReporteEventos() throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -238,6 +241,40 @@ public class ReporteExcelService {
         for (int i = 0; i < numColumnas; i++) {
             sheet.autoSizeColumn(i);
         }
+    }
+
+    public byte[] generarReporteSugerencias() throws IOException {
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Sugerencias");
+
+        List<Suggestion> sugerencias = suggestionRepository.findAll();
+
+        String[] headers = {"ID", "ID Estudiante", "Categoría", "Detalle", "Fecha Creación"};
+        crearEncabezados(sheet, headers);
+
+        CellStyle cellStyle = crearEstiloCelda(workbook);
+
+        int rowNum = 1;
+        for (Suggestion sug : sugerencias) {
+            XSSFRow row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(sug.getId() != null ? sug.getId().toString() : "");
+            row.createCell(1).setCellValue(sug.getStudentId() != null ? sug.getStudentId().toString() : "");
+            row.createCell(2).setCellValue(sug.getCategory() != null ? sug.getCategory().toString() : "");
+            row.createCell(3).setCellValue(sug.getBody() != null ? sug.getBody() : "");
+            row.createCell(4).setCellValue(sug.getCreatedAt() != null ? sug.getCreatedAt().toString() : "");
+
+            for (int i = 0; i < headers.length; i++) {
+                row.getCell(i).setCellStyle(cellStyle);
+            }
+        }
+
+        autoAjustarColumnas(sheet, headers.length);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        workbook.write(out);
+        workbook.close();
+
+        return out.toByteArray();
     }
 
 }
