@@ -115,7 +115,10 @@ public class UserService {
             saved.getRole().name(),
             careerInfo,
             saved.getStatus().name(),
-            saved.getCreatedAt().toString()
+            saved.getCreatedAt().toString(),
+            user.getPhone(),
+            user.getBio()
+
         );
     }
 
@@ -168,7 +171,10 @@ public class UserService {
                     user.getRole().name(),
                     careerInfo,
                     user.getStatus().name(),
-                    user.getCreatedAt().toString()
+                    user.getCreatedAt().toString(),
+                    user.getPhone(),
+                    user.getBio()
+
                 );
             })
             .toList();
@@ -210,7 +216,28 @@ public class UserService {
             saved.getRole().name(),
             careerInfo,
             saved.getStatus().name(),
-            saved.getCreatedAt().toString()
+            saved.getCreatedAt().toString(),
+            saved.getPhone(),
+            saved.getBio()
+
+        );
+    }
+    // ─── Obtener perfil público de usuario por ID ─────────────────────────────
+    public UserListDTO getUserById(UUID id) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        UserListDTO.CareerInfo careerInfo = getCareerInfo(user);
+        return new UserListDTO(
+            user.getId(),
+            user.getFullName(),
+            user.getEmail(),
+            user.getRole().name(),
+            careerInfo,
+            user.getStatus().name(),
+            user.getCreatedAt().toString(),
+            user.getPhone(),
+            user.getBio()
+
         );
     }
 }
