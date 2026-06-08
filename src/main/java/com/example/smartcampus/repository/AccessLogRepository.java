@@ -2,13 +2,14 @@ package com.example.smartcampus.repository;
 
 import com.example.smartcampus.entity.AccessLog;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface AccessLogRepository extends JpaRepository<AccessLog, Long> {
+public interface AccessLogRepository extends JpaRepository<AccessLog, Long>, JpaSpecificationExecutor<AccessLog> {
     // 🔥 NUEVO: TODOS los logs (exitosos y fallidos), ordenados por fecha DESC
     List<AccessLog> findAllByOrderByCreatedAtDesc();
     // Solo intentos fallidos, más recientes primero

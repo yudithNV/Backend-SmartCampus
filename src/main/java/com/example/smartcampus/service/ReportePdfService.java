@@ -1,20 +1,29 @@
 package com.example.smartcampus.service;
 
 import java.io.ByteArrayOutputStream;
+import java.time.OffsetDateTime;
 import java.util.List;
 
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import com.example.smartcampus.entity.Event;
-import com.example.smartcampus.entity.User;
+import com.example.smartcampus.entity.AccessLog;
 import com.example.smartcampus.entity.Complaint;
+import com.example.smartcampus.entity.ComplaintStatus;
+import com.example.smartcampus.entity.Event;
 import com.example.smartcampus.entity.News;
-import com.example.smartcampus.repository.EventRepository;
-import com.example.smartcampus.repository.UserRepository;
-import com.example.smartcampus.repository.ComplaintRepository;
+import com.example.smartcampus.entity.NewsCategory;
+import com.example.smartcampus.entity.Role;
+import com.example.smartcampus.entity.Status;
 import com.example.smartcampus.entity.Suggestion;
-import com.example.smartcampus.repository.SuggestionRepository;
+import com.example.smartcampus.entity.SuggestionCategory;
+import com.example.smartcampus.entity.User;
+import com.example.smartcampus.repository.AccessLogRepository;
+import com.example.smartcampus.repository.ComplaintRepository;
+import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.NewsRepository;
+import com.example.smartcampus.repository.SuggestionRepository;
+import com.example.smartcampus.repository.UserRepository;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
@@ -35,8 +44,9 @@ public class ReportePdfService {
     private final ComplaintRepository complaintRepository;
     private final NewsRepository newsRepository;
     private final SuggestionRepository suggestionRepository;
+    private final AccessLogRepository accessLogRepository;
 
-    public byte[] generarReporteEventos() throws DocumentException {
+    public byte[] generarReporteEventos(Boolean isActive, Integer categoryId, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws DocumentException {
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PdfWriter.getInstance(document, out);
@@ -52,7 +62,20 @@ public class ReportePdfService {
         document.add(title);
         document.add(new Paragraph("\n"));
 
-        List<Event> eventos = eventRepository.findAll();
+        Specification<Event> spec = (root, query, cb) -> cb.conjunction();
+        if (isActive != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("isActive"), isActive));
+        }
+        if (categoryId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("categoryId"), categoryId));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("startDatetime"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("startDatetime"), fechaFin));
+        }
+        List<Event> eventos = eventRepository.findAll(spec);
 
         Table table = new Table(7);
         table.setWidth(100);
@@ -84,7 +107,7 @@ public class ReportePdfService {
         return out.toByteArray();
     }
 
-    public byte[] generarReporteUsuarios() throws DocumentException {
+    public byte[] generarReporteUsuarios(Role role, Status status, Integer careerId) throws DocumentException {
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PdfWriter.getInstance(document, out);
@@ -100,7 +123,17 @@ public class ReportePdfService {
         document.add(title);
         document.add(new Paragraph("\n"));
 
-        List<User> usuarios = userRepository.findAll();
+        Specification<User> spec = (root, query, cb) -> cb.conjunction();
+        if (role != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("role"), role));
+        }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (careerId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("careerId"), careerId));
+        }
+        List<User> usuarios = userRepository.findAll(spec);
 
         Table table = new Table(6);
         table.setWidth(100);
@@ -130,7 +163,7 @@ public class ReportePdfService {
         return out.toByteArray();
     }
 
-    public byte[] generarReporteQuejas() throws DocumentException {
+    public byte[] generarReporteQuejas(ComplaintStatus status, String category, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws DocumentException {
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PdfWriter.getInstance(document, out);
@@ -146,7 +179,20 @@ public class ReportePdfService {
         document.add(title);
         document.add(new Paragraph("\n"));
 
-        List<Complaint> quejas = complaintRepository.findAll();
+        Specification<Complaint> spec = (root, query, cb) -> cb.conjunction();
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (category != null && !category.trim().isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), category.trim()));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), fechaFin));
+        }
+        List<Complaint> quejas = complaintRepository.findAll(spec);
 
         Table table = new Table(6);
         table.setWidth(100);
@@ -177,7 +223,7 @@ public class ReportePdfService {
         return out.toByteArray();
     }
 
-    public byte[] generarReportePublicaciones() throws DocumentException {
+    public byte[] generarReportePublicaciones(NewsCategory category, Boolean published, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws DocumentException {
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PdfWriter.getInstance(document, out);
@@ -193,7 +239,20 @@ public class ReportePdfService {
         document.add(title);
         document.add(new Paragraph("\n"));
 
-        List<News> publicaciones = newsRepository.findAll();
+        Specification<News> spec = (root, query, cb) -> cb.conjunction();
+        if (category != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), category));
+        }
+        if (published != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("published"), published));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), fechaFin));
+        }
+        List<News> publicaciones = newsRepository.findAll(spec);
 
         Table table = new Table(7);
         table.setWidth(100);
@@ -274,7 +333,7 @@ public class ReportePdfService {
         return out.toByteArray();
     }
 
-    public byte[] generarReporteSugerencias() throws DocumentException {
+    public byte[] generarReporteSugerencias(SuggestionCategory category, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws DocumentException {
         Document document = new Document();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PdfWriter.getInstance(document, out);
@@ -290,7 +349,17 @@ public class ReportePdfService {
         document.add(title);
         document.add(new Paragraph("\n"));
 
-        List<Suggestion> sugerencias = suggestionRepository.findAll();
+        Specification<Suggestion> spec = (root, query, cb) -> cb.conjunction();
+        if (category != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), category));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), fechaFin));
+        }
+        List<Suggestion> sugerencias = suggestionRepository.findAll(spec);
 
         Table table = new Table(5);
         table.setWidth(100);
@@ -312,6 +381,63 @@ public class ReportePdfService {
             String detail = sug.getBody() != null ? sug.getBody() : "";
             table.addCell(new Paragraph(detail.length() > 50 ? detail.substring(0, 50) + "..." : detail, normalFont));
             table.addCell(new Paragraph(sug.getCreatedAt() != null ? sug.getCreatedAt().toString() : "", normalFont));
+        }
+
+        document.add(table);
+        document.close();
+
+        return out.toByteArray();
+    }
+
+    public byte[] generarReporteAccesos(Boolean success, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws DocumentException {
+        Document document = new Document();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PdfWriter.getInstance(document, out);
+
+        document.open();
+
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
+        Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+        Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+
+        Paragraph title = new Paragraph("Reporte de Accesos / Logs", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        document.add(title);
+        document.add(new Paragraph("\n"));
+
+        Specification<AccessLog> spec = (root, query, cb) -> cb.conjunction();
+        if (success != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("success"), success));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), fechaFin));
+        }
+        List<AccessLog> logs = accessLogRepository.findAll(spec);
+
+        Table table = new Table(6);
+        table.setWidth(100);
+        table.setPadding(5);
+        table.setBorderWidth(1);
+
+        String[] headers = {"ID", "Email", "IP", "Resultado", "User Agent", "Fecha"};
+        for (String header : headers) {
+            Paragraph p = new Paragraph(header, headerFont);
+            p.setAlignment(Element.ALIGN_CENTER);
+            table.addCell(p);
+        }
+        table.endHeaders();
+
+        for (AccessLog log : logs) {
+            table.addCell(new Paragraph(log.getId() != null ? log.getId().toString() : "", normalFont));
+            table.addCell(new Paragraph(log.getEmail() != null ? log.getEmail() : "", normalFont));
+            table.addCell(new Paragraph(log.getIpAddress() != null ? log.getIpAddress() : "", normalFont));
+            table.addCell(new Paragraph(log.getSuccess() != null ? (log.getSuccess() ? "Exitoso" : "Fallido") : "", normalFont));
+            String ua = log.getUserAgent() != null ? log.getUserAgent() : "";
+            table.addCell(new Paragraph(ua.length() > 50 ? ua.substring(0, 50) + "..." : ua, normalFont));
+            table.addCell(new Paragraph(log.getCreatedAt() != null ? log.getCreatedAt().toString() : "", normalFont));
         }
 
         document.add(table);

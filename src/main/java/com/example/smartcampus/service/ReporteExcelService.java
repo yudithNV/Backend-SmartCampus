@@ -2,6 +2,7 @@ package com.example.smartcampus.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -11,16 +12,24 @@ import org.apache.poi.xssf.usermodel.XSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import com.example.smartcampus.entity.AccessLog;
 import com.example.smartcampus.entity.Complaint;
+import com.example.smartcampus.entity.ComplaintStatus;
 import com.example.smartcampus.entity.Event;
 import com.example.smartcampus.entity.News;
+import com.example.smartcampus.entity.NewsCategory;
+import com.example.smartcampus.entity.Role;
+import com.example.smartcampus.entity.Status;
+import com.example.smartcampus.entity.Suggestion;
+import com.example.smartcampus.entity.SuggestionCategory;
 import com.example.smartcampus.entity.User;
+import com.example.smartcampus.repository.AccessLogRepository;
 import com.example.smartcampus.repository.ComplaintRepository;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.NewsRepository;
-import com.example.smartcampus.entity.Suggestion;
 import com.example.smartcampus.repository.SuggestionRepository;
 import com.example.smartcampus.repository.UserRepository;
 
@@ -35,12 +44,26 @@ public class ReporteExcelService {
     private final ComplaintRepository complaintRepository;
     private final NewsRepository newsRepository;
     private final SuggestionRepository suggestionRepository;
+    private final AccessLogRepository accessLogRepository;
 
-    public byte[] generarReporteEventos() throws IOException {
+    public byte[] generarReporteEventos(Boolean isActive, Integer categoryId, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Eventos");
 
-        List<Event> eventos = eventRepository.findAll();
+        Specification<Event> spec = (root, query, cb) -> cb.conjunction();
+        if (isActive != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("isActive"), isActive));
+        }
+        if (categoryId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("categoryId"), categoryId));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("startDatetime"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("startDatetime"), fechaFin));
+        }
+        List<Event> eventos = eventRepository.findAll(spec);
 
         String[] headers = {"ID", "Nombre", "Descripción", "Fecha Inicio", "Ubicación", "Tipo", "Estado"};
         crearEncabezados(sheet, headers);
@@ -72,11 +95,21 @@ public class ReporteExcelService {
         return out.toByteArray();
     }
 
-    public byte[] generarReporteUsuarios() throws IOException {
+    public byte[] generarReporteUsuarios(Role role, Status status, Integer careerId) throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Usuarios");
 
-        List<User> usuarios = userRepository.findAll();
+        Specification<User> spec = (root, query, cb) -> cb.conjunction();
+        if (role != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("role"), role));
+        }
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (careerId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("careerId"), careerId));
+        }
+        List<User> usuarios = userRepository.findAll(spec);
 
         String[] headers = {"ID", "Nombre", "Email", "Rol", "Estado", "Carrera"};
         crearEncabezados(sheet, headers);
@@ -107,11 +140,24 @@ public class ReporteExcelService {
         return out.toByteArray();
     }
 
-    public byte[] generarReporteQuejas() throws IOException {
+    public byte[] generarReporteQuejas(ComplaintStatus status, String category, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Quejas");
 
-        List<Complaint> quejas = complaintRepository.findAll();
+        Specification<Complaint> spec = (root, query, cb) -> cb.conjunction();
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (category != null && !category.trim().isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), category.trim()));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), fechaFin));
+        }
+        List<Complaint> quejas = complaintRepository.findAll(spec);
 
         String[] headers = {"ID", "Título", "Descripción", "Categoría", "Estado", "Fecha Creación"};
         crearEncabezados(sheet, headers);
@@ -142,11 +188,24 @@ public class ReporteExcelService {
         return out.toByteArray();
     }
 
-    public byte[] generarReportePublicaciones() throws IOException {
+    public byte[] generarReportePublicaciones(NewsCategory category, Boolean published, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Publicaciones");
 
-        List<News> publicaciones = newsRepository.findAll();
+        Specification<News> spec = (root, query, cb) -> cb.conjunction();
+        if (category != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), category));
+        }
+        if (published != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("published"), published));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), fechaFin));
+        }
+        List<News> publicaciones = newsRepository.findAll(spec);
 
         String[] headers = {"ID", "Título", "Descripción", "Categoría", "Estado", "Autor", "Fecha Creación"};
         crearEncabezados(sheet, headers);
@@ -243,11 +302,21 @@ public class ReporteExcelService {
         }
     }
 
-    public byte[] generarReporteSugerencias() throws IOException {
+    public byte[] generarReporteSugerencias(SuggestionCategory category, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws IOException {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Sugerencias");
 
-        List<Suggestion> sugerencias = suggestionRepository.findAll();
+        Specification<Suggestion> spec = (root, query, cb) -> cb.conjunction();
+        if (category != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("category"), category));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), fechaFin));
+        }
+        List<Suggestion> sugerencias = suggestionRepository.findAll(spec);
 
         String[] headers = {"ID", "ID Estudiante", "Categoría", "Detalle", "Fecha Creación"};
         crearEncabezados(sheet, headers);
@@ -262,6 +331,52 @@ public class ReporteExcelService {
             row.createCell(2).setCellValue(sug.getCategory() != null ? sug.getCategory().toString() : "");
             row.createCell(3).setCellValue(sug.getBody() != null ? sug.getBody() : "");
             row.createCell(4).setCellValue(sug.getCreatedAt() != null ? sug.getCreatedAt().toString() : "");
+
+            for (int i = 0; i < headers.length; i++) {
+                row.getCell(i).setCellStyle(cellStyle);
+            }
+        }
+
+        autoAjustarColumnas(sheet, headers.length);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        workbook.write(out);
+        workbook.close();
+
+        return out.toByteArray();
+    }
+
+    public byte[] generarReporteAccesos(Boolean success, OffsetDateTime fechaInicio, OffsetDateTime fechaFin) throws IOException {
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        XSSFSheet sheet = workbook.createSheet("Accesos");
+
+        Specification<AccessLog> spec = (root, query, cb) -> cb.conjunction();
+        if (success != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("success"), success));
+        }
+        if (fechaInicio != null) {
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("createdAt"), fechaInicio));
+        }
+        if (fechaFin != null) {
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("createdAt"), fechaFin));
+        }
+        List<AccessLog> logs = accessLogRepository.findAll(spec);
+
+        String[] headers = {"ID", "Email", "IP", "Resultado", "User Agent", "Fecha"};
+        crearEncabezados(sheet, headers);
+
+        CellStyle cellStyle = crearEstiloCelda(workbook);
+
+        int rowNum = 1;
+        for (AccessLog log : logs) {
+            XSSFRow row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(log.getId() != null ? log.getId().toString() : "");
+            row.createCell(1).setCellValue(log.getEmail() != null ? log.getEmail() : "");
+            row.createCell(2).setCellValue(log.getIpAddress() != null ? log.getIpAddress() : "");
+            row.createCell(3).setCellValue(log.getSuccess() != null ? (log.getSuccess() ? "Exitoso" : "Fallido") : "");
+            String ua = log.getUserAgent() != null ? log.getUserAgent() : "";
+            row.createCell(4).setCellValue(ua.length() > 80 ? ua.substring(0, 80) + "..." : ua);
+            row.createCell(5).setCellValue(log.getCreatedAt() != null ? log.getCreatedAt().toString() : "");
 
             for (int i = 0; i < headers.length; i++) {
                 row.getCell(i).setCellStyle(cellStyle);
