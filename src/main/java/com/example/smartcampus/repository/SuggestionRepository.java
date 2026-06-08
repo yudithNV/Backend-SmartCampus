@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,7 +14,7 @@ import com.example.smartcampus.entity.Suggestion;
 import com.example.smartcampus.entity.SuggestionCategory;
 
 @Repository
-public interface SuggestionRepository extends JpaRepository<Suggestion, Long> {
+public interface SuggestionRepository extends JpaRepository<Suggestion, Long>, JpaSpecificationExecutor<Suggestion> {
 
     // Todas las sugerencias del estudiante, más recientes primero
     List<Suggestion> findByStudentIdOrderByCreatedAtDesc(UUID studentId);
