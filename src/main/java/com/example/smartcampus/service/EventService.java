@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.smartcampus.dto.CareerDTO;
 import com.example.smartcampus.dto.CategoryDTO;
+import com.example.smartcampus.dto.EventAttendeeDTO;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
 import com.example.smartcampus.dto.LocationDTO;
@@ -33,7 +34,6 @@ import com.example.smartcampus.repository.EventRegistrationRepository;
 import com.example.smartcampus.repository.EventRepository;
 import com.example.smartcampus.repository.LocationRepository;
 import com.example.smartcampus.repository.UserRepository;
-import com.example.smartcampus.service.ReminderService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -570,5 +570,33 @@ public class EventService {
                 .stream()
                 .map(event -> mapToDTO(event, studentId))
                 .collect(Collectors.toList());
+    }
+
+    public Page<EventAttendeeDTO> getEventAttendees(Long eventoId, Pageable pageable) {
+    // 1. Verificamos evento
+        eventRepository.findById(eventoId)
+                .orElseThrow(() -> new RuntimeException("Evento no encontrado"));
+
+        // 2. Buscamos registros PAGINADOS
+        Page<EventRegistration> registrations = eventRegistrationRepository.findByEventId(eventoId, pageable);
+
+        // 3. Convertimos a Page de DTO
+        return registrations.map(registration -> {
+            User user = userRepository.findById(registration.getStudentId()).orElse(null);
+            if (user == null) return null;
+
+            String careerName = (user.getCareerId() != null) 
+                                ? careerRepository.findById(user.getCareerId()).map(c -> c.getName()).orElse("") 
+                                : "";
+            
+            return EventAttendeeDTO.builder()
+                    .id(user.getId())
+                    .nombreCompleto(user.getFullName())
+                    .correo(user.getEmail())
+                    .carreraArea(careerName)
+                    .fechaInscripcion(registration.getRegisteredAt())
+                    .estado("Inscrito")
+                    .build();
+        });
     }
 }

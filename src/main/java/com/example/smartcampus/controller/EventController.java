@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.smartcampus.dto.ApiResponse;
+import com.example.smartcampus.dto.EventAttendeeDTO;
 import com.example.smartcampus.dto.EventCreateDTO;
 import com.example.smartcampus.dto.EventResponseDTO;
 import com.example.smartcampus.dto.RegisteredEventsResponse;
@@ -172,5 +175,16 @@ public class EventController {
             @AuthenticationPrincipal User user) {
         eventService.deleteEvent(id, user);
         return ResponseEntity.ok(ApiResponse.ok("Evento eliminado exitosamente", null));
+    }
+
+    @GetMapping("/{eventoId}/inscritos")
+    public ResponseEntity<Page<EventAttendeeDTO>> getInscritos(
+            @PathVariable Long eventoId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        // Usamos PageRequest.of para convertir esos parámetros a un Pageable
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(eventService.getEventAttendees(eventoId, pageable));
     }
 }

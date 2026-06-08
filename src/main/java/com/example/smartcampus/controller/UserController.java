@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-
 import com.example.smartcampus.dto.ApiResponse;
 import com.example.smartcampus.dto.UpdateUserStatusDTO;
 import com.example.smartcampus.dto.UserCreateDTO;
@@ -117,6 +116,19 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
                 .body(ApiResponse.ok(e.getMessage(), null));
+        }
+    }
+
+    // ─── GET /api/users/{id}/public — perfil público de usuario ───────────────
+    @GetMapping("/{id}/public")
+    public ResponseEntity<ApiResponse<UserListDTO>> getUserPublicProfile(
+            @PathVariable UUID id) {
+        try {
+            UserListDTO user = userService.getUserById(id);
+            return ResponseEntity.ok(ApiResponse.ok("Usuario obtenido correctamente", user));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                .body(ApiResponse.error(e.getMessage()));
         }
     }
 }

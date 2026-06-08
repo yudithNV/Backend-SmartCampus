@@ -16,6 +16,8 @@ public class UserListDTO {
     private CareerInfo career;
     private String status;
     private String createdAt;
+    private String phone;
+    private String bio;
 
     @Data
     @AllArgsConstructor
