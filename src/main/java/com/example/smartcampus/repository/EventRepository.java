@@ -152,6 +152,26 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
             @Param("categoryId") Integer categoryId
     );
 
+    // ── Series temporales (dashboard) ────────────────────────────────────────
+    /**
+     * Cuenta eventos creados por mes entre dos fechas.
+     * Retorna [año (int), mes (int), count (Long)]
+     */
+    @Query(value = """
+        SELECT EXTRACT(YEAR FROM created_at),
+                EXTRACT(MONTH FROM created_at),
+                COUNT(id)
+        FROM events
+        WHERE created_at >= :from
+        AND created_at < :to
+        GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
+        ORDER BY EXTRACT(YEAR FROM created_at) ASC, EXTRACT(MONTH FROM created_at) ASC
+        """, nativeQuery = true)
+
+    List<Object[]> countEventsByMonth(
+            @Param("from") OffsetDateTime from,
+            @Param("to")   OffsetDateTime to);
+
     // Contar eventos publicados (isActive = true)
     @Query("SELECT COUNT(e) FROM Event e WHERE e.isActive = true")
     long countPublishedEvents();

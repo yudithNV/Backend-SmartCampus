@@ -1,5 +1,9 @@
 package com.example.smartcampus.service;
 
+import java.time.OffsetDateTime;
+import java.time.YearMonth;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +12,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.example.smartcampus.dto.AccessLogMetricsDTO;
+import com.example.smartcampus.dto.MonthlyCountDTO;
 import com.example.smartcampus.dto.AdminDashboardDTO;
 import com.example.smartcampus.dto.ComplaintByCategoryDTO;
 import com.example.smartcampus.dto.ComplaintMetricsDTO;
@@ -263,5 +268,68 @@ public class AdminDashboardService {
                 .total(total)
                 .byCategory(byCategory)
                 .build();
+    }
+
+    // ── Series temporales ─────────────────────────────────────────────────────
+
+    /**
+     * Devuelve conteos mensuales de Eventos creados, Noticias publicadas
+     * y Usuarios registrados para el rango [from, to] (mes de inicio → mes de fin).
+     * Los meses sin datos se rellenan con 0 para que la línea del gráfico sea continua.
+     */
+    public Map<String, List<MonthlyCountDTO>> getTemporalMetrics(
+            int fromYear, int fromMonth, int toYear, int toMonth) {
+
+        YearMonth start = YearMonth.of(fromYear, fromMonth);
+        YearMonth end   = YearMonth.of(toYear,   toMonth);
+
+        // Convertir a OffsetDateTime (inicio del mes "from" → inicio del mes siguiente a "to")
+        OffsetDateTime from = start.atDay(1).atStartOfDay().atOffset(ZoneOffset.UTC);
+        OffsetDateTime to   = end.plusMonths(1).atDay(1).atStartOfDay().atOffset(ZoneOffset.UTC);
+
+        // Consultar BD
+        List<Object[]> eventsRaw = eventRepository.countEventsByMonth(from, to);
+        List<Object[]> newsRaw   = newsRepository.countNewsByMonth(from, to);
+        List<Object[]> usersRaw  = userRepository.countUsersByMonth(from, to);
+
+        return Map.of(
+                "events", buildSeries(start, end, eventsRaw),
+                "news",   buildSeries(start, end, newsRaw),
+                "users",  buildSeries(start, end, usersRaw)
+        );
+    }
+
+    /**
+     * Construye una lista de MonthlyCountDTO con TODOS los meses en [start, end],
+     * rellenando con 0 los meses que no aparecen en los resultados de la BD.
+     *
+     * @param start    Primer mes del rango
+     * @param end      Último mes del rango (inclusive)
+     * @param rawRows  Filas [año (Number), mes (Number), count (Long)] de la query
+     */
+    private List<MonthlyCountDTO> buildSeries(
+            YearMonth start, YearMonth end, List<Object[]> rawRows) {
+
+        // Indexar resultados por "YYYY-MM"
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (Object[] row : rawRows) {
+            int year  = ((Number) row[0]).intValue();
+            int month = ((Number) row[1]).intValue();
+            long cnt  = ((Number) row[2]).longValue();
+            counts.put(String.format("%04d-%02d", year, month), cnt);
+        }
+
+        // Generar la serie completa, mes a mes
+        List<MonthlyCountDTO> series = new ArrayList<>();
+        YearMonth cursor = start;
+        while (!cursor.isAfter(end)) {
+            String key = String.format("%04d-%02d", cursor.getYear(), cursor.getMonthValue());
+            series.add(MonthlyCountDTO.builder()
+                    .month(key)
+                    .count(counts.getOrDefault(key, 0L))
+                    .build());
+            cursor = cursor.plusMonths(1);
+        }
+        return series;
     }
 }

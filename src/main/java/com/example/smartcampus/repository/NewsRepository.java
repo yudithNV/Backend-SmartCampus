@@ -66,5 +66,26 @@ public interface NewsRepository extends JpaRepository<News, Long>, JpaSpecificat
            "GROUP BY n.category " +
            "ORDER BY COUNT(n) DESC")
     List<Object[]> countNewsByCategory();
+
+    // ── Series temporales (dashboard) ────────────────────────────────────────
+    /**
+     * Cuenta noticias publicadas por mes entre dos fechas.
+     * Retorna [año (int), mes (int), count (Long)]
+     */
+    @Query(value = """
+       SELECT EXTRACT(YEAR FROM created_at),
+              EXTRACT(MONTH FROM created_at),
+              COUNT(id)
+       FROM news
+       WHERE status = 'PUBLICADO'
+       AND created_at >= :from
+       AND created_at < :to
+       GROUP BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
+       ORDER BY EXTRACT(YEAR FROM created_at) ASC, EXTRACT(MONTH FROM created_at) ASC
+       """, nativeQuery = true)
+       
+    List<Object[]> countNewsByMonth(
+            @Param("from") OffsetDateTime from,
+            @Param("to")   OffsetDateTime to);
 }
  
